@@ -124,9 +124,7 @@ import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
 
 stdMain_ ∷ ∀ ε α σ ω ν μ .
            (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-            ToExitCode σ, HasIOClass ω, HasDoMock ω,
- Show α -- XXX
-           ) ⇒
+            ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
            Natty ν
          → Text
          → Parser α
@@ -221,8 +219,7 @@ stdMain_ n desc p io = do
  -}
 stdMain ∷ ∀ ε α σ ω ν μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ, HasIOClass ω, HasDoMock ω, Show α -- XXX
-          ) ⇒
+           ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
           Natty ν
         → Text
         → Parser α
@@ -235,8 +232,7 @@ type LogTIO ω ε = (LoggingT (Log ω) (ExceptT ε IO))
 
 stdMainx ∷ ∀ ε α σ ω ν μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ, HasIOClass ω, HasDoMock ω, Show α -- XXX
-           ) ⇒
+           ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
           Natty ν
         → Text
         → Parser α
@@ -254,11 +250,11 @@ stdMainx n desc p io =
      Note that although the `io` arg. is typed to a `ReaderT`, much simpler
      types - e.g., `MonadIO ⇒ μ ()`, or `MonadIO ⇒ μ ExitCode` - will suffice.
  -}
-stdMain' ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ, Show ρ -- XXX
-                     ) ⇒
+stdMain' ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
            Text
          → Parser ρ
-         → (DoMock → ρ → ReaderT (DryRunLevel One) (LogTIO MockIOClass UsageIOError) σ)
+         → (DoMock → ρ → ReaderT (DryRunLevel One)
+                                 (LogTIO MockIOClass UsageIOError) σ)
          → μ ()
 stdMain' desc parser io =
   let go opts = do

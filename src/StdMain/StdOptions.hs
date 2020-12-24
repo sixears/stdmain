@@ -85,7 +85,8 @@ import StdMain.VerboseOptions  ( HasVerboseOptions( verboseOptions )
 
 --------------------------------------------------------------------------------
 
-{- | Curryable if-then-else; flippety-`flip` of `Data.Bool.bool`. -}
+{- | Curryable if-then-else; flippety-`Data.Function.flip` of `Data.Bool.bool`.
+ -}
 ifThenElse ∷ Bool → a → a → a
 ifThenElse b t e = if b then t else e
 
