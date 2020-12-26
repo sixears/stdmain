@@ -7,7 +7,7 @@
 
 -- Move/Factor StdOptions into own file
 module StdMain
-  ( stdMain, stdMain' )
+  ( stdMain, stdMainSimple, stdMain', stdMain'' )
 where
 
 -- base --------------------------------
@@ -243,23 +243,49 @@ stdMainx n desc p io =
 
 ----------
 
-{- | More simpley-typed version of `stdMain`, where the error is specifically a
-     `UsageIOError`, and there is a single dry-run level which is translated to
-     DoMock/NoMock; intended for simple IO programs.
+{- | Version of `stdMain`, with more simple type; where the error is
+     specifically a `UsageIOError`, and there is a single dry-run level which is
+     translated to DoMock/NoMock; intended for simple IO programs.
 
      Note that although the `io` arg. is typed to a `ReaderT`, much simpler
      types - e.g., `MonadIO ⇒ μ ()`, or `MonadIO ⇒ μ ExitCode` - will suffice.
  -}
-stdMain' ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
-           Text
-         → Parser ρ
-         → (DoMock → ρ → ReaderT (DryRunLevel One)
-                                 (LogTIO MockIOClass UsageIOError) σ)
-         → μ ()
-stdMain' desc parser io =
+stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
+                Text
+              → Parser ρ
+              → (DoMock → ρ → ReaderT (DryRunLevel One)
+                                      (LogTIO MockIOClass UsageIOError) σ)
+              → μ ()
+stdMainSimple desc parser io =
   let go opts = do
         mock ← ifDryRun DoMock NoMock
         io mock opts
    in stdMainx one desc parser go
+
+----------------------------------------
+
+{- | `stdMain` with `ω` fixed to `MockIOClass` (i.e., logging with
+     MockIOClass). -}
+stdMain' ∷ ∀ ε α σ ν μ .
+          (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
+           ToExitCode σ) ⇒
+          Natty ν
+        → Text
+        → Parser α
+        → (DryRunLevel ν → α → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
+        → μ ()
+stdMain' = stdMain
+
+----------------------------------------
+
+{- | `stdMain'` with `ν` fixed to `one` (i.e., a single dry-run level). -}
+stdMain'' ∷ ∀ ε α σ μ .
+          (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
+           ToExitCode σ) ⇒
+          Text
+        → Parser α
+        → (DryRunLevel One → α → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
+        → μ ()
+stdMain'' = stdMain' one
 
 -- that's all, folks! ----------------------------------------------------------
