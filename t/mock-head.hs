@@ -54,7 +54,7 @@ import Options.Applicative  ( Parser
 
 -- std-main ----------------------------
 
-import StdMain             ( stdMain' )
+import StdMain             ( stdMainSimple )
 import StdMain.UsageError  ( AsUsageError )
 
 -- text --------------------------------
@@ -101,7 +101,8 @@ main = -- XXX Tidy This Up
        -- add Logging to withFile
        -- cmd logging using showcmdforuser
 
-       stdMain' "simple 'head' re-implementation to test MockIO" parseOptions go
+       stdMainSimple "simple 'head' re-implementation to test MockIO"
+                     parseOptions go
 
 go ∷ (MonadLog (Log MockIOClass) μ, MonadIO μ, MonadError ε μ, AsUsageError ε) ⇒
      DoMock → Options → μ ()
