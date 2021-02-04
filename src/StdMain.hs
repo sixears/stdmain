@@ -7,7 +7,7 @@
 
 -- Move/Factor StdOptions into own file
 module StdMain
-  ( stdMain, stdMainSimple, stdMain', stdMain'' )
+  ( LogTIO, stdMain, stdMainSimple, stdMain', stdMain'' )
 where
 
 -- base --------------------------------

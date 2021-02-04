@@ -1,4 +1,8 @@
-1.0.2.0 2020-12-25
+1.1.1.0 2020-02-04
+==================
+- export LogTIO type from StdMain
+
+1.1.0.0 2020-12-25
 ==================
 - stdMain' -> stdMainSimple; add stdMain' & stdMain''
 
