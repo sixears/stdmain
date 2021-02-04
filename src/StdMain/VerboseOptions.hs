@@ -105,12 +105,11 @@ import Text.Parsec.Prim        ( Parsec, ParsecT, Stream, parse, try )
 
 -- parsec-plus -------------------------
 
-import ParsecPlus  ( Parsecable( parsec, parser ), ParseError
-                   , caseInsensitiveString, uniquePrefix )
+import ParsecPlus  ( Parsecable( parsec, parser ), ParseError )
 
 -- parser-plus -------------------------
 
-import ParserPlus  ( tries )
+import ParserPlus  ( caseInsensitiveString, tries, uniquePrefix )
 
 -- tasty -------------------------------
 
@@ -217,7 +216,7 @@ data LogCfgElement = LogCfgIOClassSet IOClassSet
   deriving (Eq,Show)
 
 instance Parsecable LogCfgElement where
-  parser = let ciString  = caseInsensitiveString
+  parser = let ciString  = caseInsensitiveString @_ @[]
                ioc_tag   = tries $ ciString "ioclasses" :| [ciString "ioclass"]
                show_iocs =
                  tries $ ciString "show-ioclasses" :| [ciString "show-iocs"]

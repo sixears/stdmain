@@ -76,6 +76,7 @@ import Data.MoreUnicode.Monoid   ( ю )
 
 import Control.Monad.Except  ( ExceptT, throwError )
 import Control.Monad.Reader  ( ReaderT, runReaderT )
+import Control.Monad.Trans   ( lift )
 
 -- natural-plus ------------------------
 
@@ -246,20 +247,16 @@ stdMainx n desc p io =
 {- | Version of `stdMain`, with more simple type; where the error is
      specifically a `UsageIOError`, and there is a single dry-run level which is
      translated to DoMock/NoMock; intended for simple IO programs.
-
-     Note that although the `io` arg. is typed to a `ReaderT`, much simpler
-     types - e.g., `MonadIO ⇒ μ ()`, or `MonadIO ⇒ μ ExitCode` - will suffice.
  -}
 stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
                 Text
               → Parser ρ
-              → (DoMock → ρ → ReaderT (DryRunLevel One)
-                                      (LogTIO MockIOClass UsageIOError) σ)
+              → (DoMock → ρ → (LogTIO MockIOClass UsageIOError) σ)
               → μ ()
 stdMainSimple desc parser io =
   let go opts = do
         mock ← ifDryRun DoMock NoMock
-        io mock opts
+        lift $ io mock opts
    in stdMainx one desc parser go
 
 ----------------------------------------

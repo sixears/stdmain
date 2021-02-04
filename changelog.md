@@ -1,3 +1,7 @@
+1.2.0.0 2020-02-04
+==================
+- simplify typesig for stdMainSimple
+
 1.1.1.0 2020-02-04
 ==================
 - export LogTIO type from StdMain
