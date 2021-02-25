@@ -19,7 +19,7 @@ import Data.Either             ( Either( Left, Right ) )
 import Data.Function           ( ($) )
 import Data.Maybe              ( Maybe( Just, Nothing ) )
 import Data.String             ( String, unwords, words )
-import System.IO               ( IO )
+import System.IO               ( IO, nativeNewlineMode, utf8 )
 import Text.Show               ( Show( show ) )
 
 -- base-unicode-symbols ----------------
@@ -63,7 +63,8 @@ import MonadError.IO.Error  ( AsIOError )
 
 -- monadio-plus ------------------------
 
-import MonadIO.File  ( IOMode( WriteMode ), fileWritable, withFileT )
+import MonadIO.File  ( IOMode( WriteMode )
+                     , fileWritable, withFileME, writeFlags )
 
 -- more-unicode ------------------------
 
@@ -203,7 +204,7 @@ stdMain_ n desc p io = do
       Just logfn → ѥ (fileWritable (unLogFile logfn)) ≫ \ case 
                      Left e         → throwError e
                      Right (Just e) → throwUsage $ "bad log file: " ⊕ e
-                     Right Nothing  → withFileT (unLogFile logfn) WriteMode $
+                     Right Nothing  → withFileME utf8 nativeNewlineMode WriteMode writeFlags (Just 0640) (unLogFile logfn) $
                                         logIOToFile io o
 
 
