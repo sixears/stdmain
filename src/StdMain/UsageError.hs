@@ -14,24 +14,38 @@ where
 
 import Control.Exception  ( Exception )
 import Control.Monad      ( return )
-import Data.Eq            ( Eq )
-import Data.Function      ( ($), id )
+import Data.Eq            ( Eq( (==) ) )
+import Data.Function      ( ($), (&), id )
 import Data.Maybe         ( Maybe( Just, Nothing ), maybe )
+import GHC.Stack          ( CallStack, HasCallStack, callStack )
 import Text.Read          ( Read, readMaybe )
 import Text.Show          ( Show( show ) )
+
+-- base-unicode-symbols ----------------
+
+import Data.Function.Unicode  ( (∘) )
 
 -- data-textual ------------------------
 
 import Data.Textual  ( Printable( print ), toString, toText )
 
+-- has-callstack -----------------------
+
+import HasCallstack  ( HasCallstack( callstack ) )
+
 -- lens --------------------------------
 
+import Control.Lens.Lens    ( lens )
 import Control.Lens.Prism   ( Prism', prism' )
 import Control.Lens.Review  ( (#) )
 
 -- monaderror-io -----------------------
 
 import MonadError.IO.Error  ( AsIOError( _IOError ), IOError )
+
+-- more-unicode ------------------------
+
+import Data.MoreUnicode.Lens  ( (⊣), (⊢) )
 
 -- mtl ---------------------------------
 
@@ -51,10 +65,22 @@ import Text.Fmt  ( fmtT )
 
 --------------------------------------------------------------------------------
 
-data UsageError = UsageError Text
-  deriving (Eq,Show)
+data UsageError = UsageError { _txt ∷ Text, _callstack ∷ CallStack }
+  deriving Show
+
+----------------------------------------
 
 instance Exception UsageError
+
+----------------------------------------
+
+instance Eq UsageError where
+  (UsageError a _) == (UsageError b _) = a == b
+
+----------------------------------------
+
+instance HasCallstack UsageError where
+  callstack = lens _callstack (\ eu cs → eu { _callstack = cs })
 
 ----------------------------------------
 
@@ -69,12 +95,12 @@ instance AsUsageError UsageError where
 --------------------
 
 instance Printable UsageError where
-  print (UsageError txt) = P.text txt
+  print = P.text ∘ _txt
 
 ------------------------------------------------------------
 
-usageError ∷ ∀ τ ε . (AsUsageError ε, Printable τ) ⇒ τ → ε
-usageError t = _UsageError # UsageError (toText t)
+usageError ∷ ∀ τ ε . (AsUsageError ε, Printable τ, HasCallStack) ⇒ τ → ε
+usageError t = _UsageError # UsageError (toText t) callStack
 
 ----------------------------------------
 
@@ -93,8 +119,6 @@ readUsage s = let errMsg = [fmtT|failed to parse: '%T'|] s
 data UsageIOError = UIOE_USAGE_ERROR UsageError
                   | UIOE_IO_ERROR    IOError
 
-instance Exception UsageIOError
-
 _UIOE_USAGE_ERROR ∷ Prism' UsageIOError UsageError
 _UIOE_USAGE_ERROR = prism' (\ e → UIOE_USAGE_ERROR e)
                            (\ case UIOE_USAGE_ERROR e → Just e; _ → Nothing)
@@ -103,18 +127,42 @@ _UIOE_IO_ERROR ∷ Prism' UsageIOError IOError
 _UIOE_IO_ERROR = prism' (\ e → UIOE_IO_ERROR e)
                         (\ case UIOE_IO_ERROR e → Just e; _ → Nothing)
 
+--------------------
+
+instance Exception UsageIOError
+
+--------------------
+
 instance Show UsageIOError where
   show (UIOE_USAGE_ERROR e) = show e
   show (UIOE_IO_ERROR    e) = show e
 
+--------------------
+
 instance AsUsageError UsageIOError where
   _UsageError = _UIOE_USAGE_ERROR
+
+--------------------
 
 instance AsIOError UsageIOError where
   _IOError = _UIOE_IO_ERROR
 
+--------------------
+
 instance Printable UsageIOError where
   print (UIOE_USAGE_ERROR e) = print e
   print (UIOE_IO_ERROR    e) = print e
+
+--------------------
+
+instance HasCallstack UsageIOError where
+  callstack =
+    let
+      getter (UIOE_USAGE_ERROR e) = e ⊣ callstack
+      getter (UIOE_IO_ERROR    e) = e ⊣ callstack
+      setter (UIOE_USAGE_ERROR e) cs = UIOE_USAGE_ERROR (e & callstack ⊢ cs)
+      setter (UIOE_IO_ERROR    e) cs = UIOE_IO_ERROR    (e & callstack ⊢ cs)
+    in
+      lens getter setter
 
 -- that's all, folks! ----------------------------------------------------------

@@ -1,3 +1,7 @@
+1.3.0.0 2021-05-08
+==================
+- add -!, -#; require that exceptions have callstacks
+
 1.2.0.1 2021-02-25
 ==================
 - use monadio-plus 1.3.1.0 (and other less significant module upgrades)

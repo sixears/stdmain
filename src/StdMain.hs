@@ -5,7 +5,6 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE UnicodeSyntax     #-}
 
--- Move/Factor StdOptions into own file
 module StdMain
   ( LogTIO, stdMain, stdMainSimple, stdMain', stdMain'' )
 where
@@ -28,6 +27,7 @@ import Data.Eq.Unicode        ( (≡) )
 import Data.Function.Unicode  ( (∘) )
 import Data.Monoid.Unicode    ( (⊕) )
 import Data.Ord.Unicode       ( (≤) )
+import GHC.Stack              ( HasCallStack )
 
 -- data-textual ------------------------
 
@@ -35,8 +35,12 @@ import Data.Textual  ( Printable, toString, toText )
 
 -- exited ------------------------------
 
-import qualified  Exited  as  Exited
+import qualified  Exited
 import Exited  ( ToExitCode )
+
+-- has-callstack -----------------------
+
+import HasCallstack  ( HasCallstack )
 
 -- log-plus ----------------------------
 
@@ -111,7 +115,8 @@ import Data.Text  ( Text )
 
 import StdMain.StdOptions      ( DryRunLevel, HasDryRunLevel( dryRunLevel )
                                , StdOptions
-                               , ifDryRun, options, parseStdOptions
+                               , callstackOnError, ifDryRun, options
+                               , parseStdOptions, profCallstackOnError
                                )
 import StdMain.UsageError      ( AsUsageError, UsageIOError, throwUsage )
 import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
@@ -126,7 +131,8 @@ import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
 
 stdMain_ ∷ ∀ ε α σ ω ν μ .
            (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-            ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
+            HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω,
+            HasCallStack) ⇒
            Natty ν
          → Text
          → Parser α
@@ -176,7 +182,19 @@ stdMain_ n desc p io = do
                                    ]
 
                          ⊕ [ optionDesc' "--verbose=OPTS" verboseDesc
-                         ]
+                           , optionDesc "--callstack-on-error / -!"
+                                                [ "In case of error, show"
+                                                , "a callstack of where the"
+                                                , "error was created."
+                                                ]
+                           , optionDesc "--prof-callstack-on-error / -#"
+                                                [ "In case of error, show"
+                                                , "a profiler-generated"
+                                                , "callstack of where the error"
+                                                , "was created if one is"
+                                                , "available."
+                                                ]
+                           ]
                         )
   o ← parseOpts Nothing (progDesc (toString desc) ⊕ footerDoc (Just footerDesc))
                         (parseStdOptions n p)
@@ -198,10 +216,10 @@ stdMain_ n desc p io = do
       logIOToFile i o' h = logToFile' renderers filters h (i o')
 
 
-  Exited.doMain $
+  Exited.doMainCS (o ⊣ callstackOnError, o ⊣ profCallstackOnError) $
     case vopts ⊣ logFile of
       Nothing    → logToStderr' renderers filters (io o)
-      Just logfn → ѥ (fileWritable (unLogFile logfn)) ≫ \ case 
+      Just logfn → ѥ (fileWritable (unLogFile logfn)) ≫ \ case
                      Left e         → throwError e
                      Right (Just e) → throwUsage $ "bad log file: " ⊕ e
                      Right Nothing  → withFileME utf8 nativeNewlineMode WriteMode writeFlags (Just 0640) (unLogFile logfn) $
@@ -221,7 +239,7 @@ stdMain_ n desc p io = do
  -}
 stdMain ∷ ∀ ε α σ ω ν μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
+           HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
           Natty ν
         → Text
         → Parser α
@@ -234,7 +252,7 @@ type LogTIO ω ε = (LoggingT (Log ω) (ExceptT ε IO))
 
 stdMainx ∷ ∀ ε α σ ω ν μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
+           HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
           Natty ν
         → Text
         → Parser α
@@ -266,7 +284,7 @@ stdMainSimple desc parser io =
      MockIOClass). -}
 stdMain' ∷ ∀ ε α σ ν μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ) ⇒
+           HasCallstack ε, ToExitCode σ) ⇒
           Natty ν
         → Text
         → Parser α
@@ -279,7 +297,7 @@ stdMain' = stdMain
 {- | `stdMain'` with `ν` fixed to `one` (i.e., a single dry-run level). -}
 stdMain'' ∷ ∀ ε α σ μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           ToExitCode σ) ⇒
+           HasCallstack ε, ToExitCode σ) ⇒
           Text
         → Parser α
         → (DryRunLevel One → α → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)

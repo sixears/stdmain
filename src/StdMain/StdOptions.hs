@@ -13,8 +13,9 @@
 module StdMain.StdOptions
   ( DryRunLevel, HasDryRun, HasDryRunLevel( dryRunLevel, level )
   , ReadDryRunLevel, StdOptions
-  , askDryRunL, dryRunOff, dryRunOn, dryRunP, dryRun1P, dryRun2P
-  , ifDryRun, ifDryRunEq, ifDryRunGE, options, parseStdOptions, unlessDryRunGE
+  , askDryRunL, callstackOnError, dryRunOff, dryRunOn, dryRunP, dryRun1P
+  , dryRun2P, ifDryRun, ifDryRunEq, ifDryRunGE, options, parseStdOptions
+  , profCallstackOnError, unlessDryRunGE
   )
 where
 
@@ -33,6 +34,10 @@ import Data.Eq.Unicode        ( (≡) )
 import Data.Function.Unicode  ( (∘) )
 import Data.Monoid.Unicode    ( (⊕) )
 import Data.Ord.Unicode       ( (≥) )
+
+-- exited ------------------------------
+
+import Exited  ( CallstackOnError(..), ProfCallstackOnError(..) )
 
 -- lens --------------------------------
 
@@ -66,7 +71,7 @@ import Natural  ( AtMost( Cons, Nil ), Countable( count ), Nat( S ), Natty
 -- optparse-applicative ----------------
 
 import Options.Applicative  ( FlagFields, Mod, Parser
-                            , flag', internal, long, short )
+                            , flag, flag', internal, long, short )
 
 -- optparse-plus -------------------------
 
@@ -136,7 +141,7 @@ dryRunLvl = dryRunLvl' ∘ view dryRunLevel
 
 ifDryRunP ∷ ReadDryRunLevel ν η ⇒ (ℕ → 𝔹) → α → α → η α
 ifDryRunP f go nogo = (\ drl → ifThenElse (f (dryRunLvl drl)) go nogo) ⊳ ask
-  
+
 ifDryRunEq ∷ ReadDryRunLevel ν η ⇒ ℕ → α → α → η α
 ifDryRunEq i = ifDryRunP (≡ i)
 
@@ -185,9 +190,11 @@ defaultSev = Warning
 
 ----------------------------------------
 
-data StdOptions ν α = StdOptions { _nonBaseOptions ∷ α
-                                 , _verboseOptions ∷ VerboseOptions
-                                 , _dryRunLevel    ∷ DryRunLevel ν
+data StdOptions ν α = StdOptions { _nonBaseOptions        ∷ α
+                                 , _verboseOptions        ∷ VerboseOptions
+                                 , _dryRunLevel           ∷ DryRunLevel ν
+                                 , _callstackOnError      ∷ CallstackOnError
+                                 , _profCallstackOnError  ∷ ProfCallstackOnError
                                  }
   deriving Show
 
@@ -199,6 +206,13 @@ instance HasVerboseOptions (StdOptions ν α) where
 
 instance HasSeverity (StdOptions ν α) where
   severity = verboseOptions ∘ severity
+
+callstackOnError ∷ Lens' (StdOptions ν α) CallstackOnError
+callstackOnError = lens _callstackOnError (\ s c → s { _callstackOnError = c })
+
+profCallstackOnError ∷ Lens' (StdOptions ν α) ProfCallstackOnError
+profCallstackOnError =
+  lens _profCallstackOnError (\ s c → s { _profCallstackOnError = c })
 
 options ∷ Lens' (StdOptions ν α) α
 options = lens _nonBaseOptions
@@ -223,5 +237,7 @@ parseStdOptions n p =
    in StdOptions ⊳ p
                  ⊵ (flagv ∤ flagq ∤ flagd ∤ verbose)
                  ⊵ dryRunP n
+                 ⊵ flag NoCallstackOnError CallstackOnError (long "callstack-on-error" ⊕ short '!')
+                 ⊵ flag NoProfCallstackOnError ProfCallstackOnError (long "prof-callstack-on-error" ⊕ short '#')
 
 -- that's all, folks! ----------------------------------------------------------
