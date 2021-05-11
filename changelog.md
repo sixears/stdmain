@@ -1,3 +1,7 @@
+1.3.1.0 2021-05-11
+==================
+- add StdMain.OptionsTools
+
 1.3.0.0 2021-05-08
 ==================
 - add -!, -#; require that exceptions have callstacks

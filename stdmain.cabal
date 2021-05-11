@@ -10,7 +10,7 @@ name:                stdmain
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             1.3.0.0
+version:             1.3.1.0
 
 -- A short (one-line) description of the package.
 synopsis:            standardized CLI wrapper
@@ -49,8 +49,8 @@ cabal-version:       >=1.10
 library
   ghc-options:        -W -Wall -fhelpful-errors
   -- Modules exported by the library.
-  exposed-modules:     StdMain, StdMain.StdOptions, StdMain.UsageError
-                     , StdMain.VerboseOptions
+  exposed-modules:     StdMain, StdMain.OptionsTools, StdMain.StdOptions
+                     , StdMain.UsageError, StdMain.VerboseOptions
 
   -- modules included in this library but not exported.
   other-modules:
@@ -60,18 +60,20 @@ library
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:     base, base-unicode-symbols, data-textual, lens
-                   , logging-effect, mtl, optparse-applicative, parsec
+  build-depends:     base, base-unicode-symbols, data-textual, data-default
+                   , lens, logging-effect, mtl, optparse-applicative, parsec
                    , prettyprinter, tasty, tasty-hunit, text, text-printer
 
                    , exited        >= 1.0.4.0
                    , fpath         >= 1.1.3.0
+                   , fstat         >= 1.0.1.0
                    , log-plus      >= 0.0.2.2
                    , has-callstack >= 1.0.1.0
                    , mockio        >= 0.0.3.0
-                   , mockio-log    >= 0.0.3.0
+                   , mockio-log    >= 0.0.3.1
+                   , mockio-plus   >= 0.1.3.1
                    , monaderror-io >= 1.1.0.1
-                   , monadio-plus  >= 1.4.2.0
+                   , monadio-plus  >= 1.4.2.1
                    , more-unicode  >= 0.0.13.0
                    , natural       >= 0.0.1.0
                    , optparse-plus >= 1.0.2.0
