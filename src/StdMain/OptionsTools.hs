@@ -1,9 +1,3 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE UnicodeSyntax     #-}
-
 {- | Tools for working with options. -}
 module StdMain.OptionsTools
   ( fileToAbsNoOverwrite, fileToAbsUE, fpathIOErrorToAsUsageIOError )

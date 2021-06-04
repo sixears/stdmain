@@ -1,3 +1,7 @@
+1.3.1.1 2021-06-04
+==================
+- use mockio-plus 0.2.0.0 / monadio-log 1.4.7.0 and friends
+
 1.3.1.0 2021-05-11
 ==================
 - add StdMain.OptionsTools

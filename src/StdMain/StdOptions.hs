@@ -1,15 +1,3 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NoImplicitPrelude      #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE UnicodeSyntax          #-}
-
 module StdMain.StdOptions
   ( DryRunLevel, HasDryRun, HasDryRunLevel( dryRunLevel, level )
   , ReadDryRunLevel, StdOptions

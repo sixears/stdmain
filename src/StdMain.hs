@@ -1,10 +1,3 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE UnicodeSyntax     #-}
-
 module StdMain
   ( LogTIO, stdMain, stdMainSimple, stdMain', stdMain'' )
 where
@@ -14,11 +7,9 @@ where
 import Control.Applicative     ( pure )
 import Control.Exception       ( Exception )
 import Control.Monad.IO.Class  ( MonadIO )
-import Data.Either             ( Either( Left, Right ) )
 import Data.Function           ( ($) )
-import Data.Maybe              ( Maybe( Just, Nothing ) )
 import Data.String             ( String, unwords, words )
-import System.IO               ( IO, nativeNewlineMode, utf8 )
+import System.IO               ( IO )
 import Text.Show               ( Show( show ) )
 
 -- base-unicode-symbols ----------------
@@ -67,13 +58,15 @@ import MonadError.IO.Error  ( AsIOError )
 
 -- monadio-plus ------------------------
 
-import MonadIO.File  ( IOMode( WriteMode )
-                     , fileWritable, withFileME, writeFlags )
+import MonadIO.File  ( FileOpenMode( FileW ), HEncoding( UTF8 )
+                     , fileWritable, withFile )
 
 -- more-unicode ------------------------
 
+import Data.MoreUnicode.Either   ( pattern 𝕷, pattern 𝕽 )
 import Data.MoreUnicode.Functor  ( (⊳) )
 import Data.MoreUnicode.Lens     ( (⊣) )
+import Data.MoreUnicode.Maybe    ( pattern 𝕵, pattern 𝕹 )
 import Data.MoreUnicode.Monad    ( (≫) )
 import Data.MoreUnicode.Monoid   ( ю )
 
@@ -196,8 +189,8 @@ stdMain_ n desc p io = do
                                                 ]
                            ]
                         )
-  o ← parseOpts Nothing (progDesc (toString desc) ⊕ footerDoc (Just footerDesc))
-                        (parseStdOptions n p)
+  o ← parseOpts 𝕹 (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
+                  (parseStdOptions n p)
   let vopts      = o ⊣ verboseOptions
       ioClasses  = vopts ⊣ ioClassFilter
       sevOpt     = o ⊣ severity
@@ -218,12 +211,12 @@ stdMain_ n desc p io = do
 
   Exited.doMainCS (o ⊣ callstackOnError, o ⊣ profCallstackOnError) $
     case vopts ⊣ logFile of
-      Nothing    → logToStderr' renderers filters (io o)
-      Just logfn → ѥ (fileWritable (unLogFile logfn)) ≫ \ case
-                     Left e         → throwError e
-                     Right (Just e) → throwUsage $ "bad log file: " ⊕ e
-                     Right Nothing  → withFileME utf8 nativeNewlineMode WriteMode writeFlags (Just 0640) (unLogFile logfn) $
-                                        logIOToFile io o
+      𝕹       → logToStderr' renderers filters (io o)
+      𝕵 logfn → ѥ (fileWritable (unLogFile logfn)) ≫ \ case
+                  𝕷 e     → throwError e
+                  𝕽 (𝕵 e) → throwUsage $ "bad log file: " ⊕ e
+                  𝕽 𝕹     → withFile UTF8 (FileW $ 𝕵 0640)
+                                          (unLogFile logfn) (logIOToFile io o)
 
 
 ----------

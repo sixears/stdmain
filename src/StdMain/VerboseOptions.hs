@@ -1,14 +1,3 @@
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE UnicodeSyntax              #-}
-{-# LANGUAGE ViewPatterns               #-}
-
 module StdMain.VerboseOptions
   ( LogFile( unLogFile ), HasVerboseOptions( verboseOptions )
   , ShowIOCs( DoShowIOCs, NoShowIOCs ), VerboseOptions

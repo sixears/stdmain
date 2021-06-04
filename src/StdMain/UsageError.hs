@@ -1,10 +1,3 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE UnicodeSyntax     #-}
-
 module StdMain.UsageError
   ( AsUsageError( _UsageError ), UsageError, UsageIOError
   , readUsage, throwUsage, usageError )
