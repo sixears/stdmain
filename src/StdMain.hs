@@ -319,12 +319,12 @@ stdMain' = stdMain
 
 {- | Like `stdMain'`, but with `DryRun` option. -}
 
-stdMainNoDR' ∷ ∀ ε ρ σ ω μ .
+stdMainNoDR' ∷ ∀ ε ρ σ μ .
               (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-               HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
+               HasCallstack ε, ToExitCode σ) ⇒
               𝕋
             → Parser ρ
-            → (ρ → LoggingT (Log ω) (ExceptT ε IO) σ)
+            → (ρ → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
             → μ ()
 
 stdMainNoDR' desc p io =
