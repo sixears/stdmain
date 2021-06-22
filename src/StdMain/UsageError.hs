@@ -1,5 +1,5 @@
 module StdMain.UsageError
-  ( AsUsageError( _UsageError ), UsageError, UsageIOError
+  ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError, UsageIOError
   , readUsage, throwUsage, usageError )
 where
 
