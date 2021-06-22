@@ -1,3 +1,7 @@
+1.3.3.0 2021-06-22
+==================
+- add UsageFPathIOError
+
 1.3.2.0 2021-06-19
 ==================
 - add stdMainNoDR{,'}, stdMainT', export stdMainT

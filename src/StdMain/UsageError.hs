@@ -22,6 +22,10 @@ import Data.Function.Unicode  ( (∘) )
 
 import Data.Textual  ( Printable( print ), toString, toText )
 
+-- fpath -------------------------------
+
+import FPath.Error.FPathError  ( AsFPathError( _FPathError ), FPathIOError )
+
 -- has-callstack -----------------------
 
 import HasCallstack  ( HasCallstack( callstack ) )
@@ -155,6 +159,62 @@ instance HasCallstack UsageIOError where
       getter (UIOE_IO_ERROR    e) = e ⊣ callstack
       setter (UIOE_USAGE_ERROR e) cs = UIOE_USAGE_ERROR (e & callstack ⊢ cs)
       setter (UIOE_IO_ERROR    e) cs = UIOE_IO_ERROR    (e & callstack ⊢ cs)
+    in
+      lens getter setter
+
+------------------------------------------------------------
+
+data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
+                       | UFPIOE_FPATHIO_ERROR FPathIOError
+
+_UFPIOE_USAGE_ERROR ∷ Prism' UsageFPathIOError UsageError
+_UFPIOE_USAGE_ERROR = prism' (\ e → UFPIOE_USAGE_ERROR e)
+                           (\ case UFPIOE_USAGE_ERROR e → Just e; _ → Nothing)
+
+_UFPIOE_FPATHIO_ERROR ∷ Prism' UsageFPathIOError FPathIOError
+_UFPIOE_FPATHIO_ERROR = prism' (\ e → UFPIOE_FPATHIO_ERROR e)
+                        (\ case UFPIOE_FPATHIO_ERROR e → Just e; _ → Nothing)
+
+--------------------
+
+instance Exception UsageFPathIOError
+
+--------------------
+
+instance Show UsageFPathIOError where
+  show (UFPIOE_USAGE_ERROR e) = show e
+  show (UFPIOE_FPATHIO_ERROR    e) = show e
+
+--------------------
+
+instance AsUsageError UsageFPathIOError where
+  _UsageError = _UFPIOE_USAGE_ERROR
+
+--------------------
+
+instance AsIOError UsageFPathIOError where
+  _IOError = _UFPIOE_FPATHIO_ERROR ∘ _IOError
+
+--------------------
+
+instance AsFPathError UsageFPathIOError where
+  _FPathError = _UFPIOE_FPATHIO_ERROR ∘ _FPathError
+
+--------------------
+
+instance Printable UsageFPathIOError where
+  print (UFPIOE_USAGE_ERROR e) = print e
+  print (UFPIOE_FPATHIO_ERROR    e) = print e
+
+--------------------
+
+instance HasCallstack UsageFPathIOError where
+  callstack =
+    let
+      getter (UFPIOE_USAGE_ERROR e) = e ⊣ callstack
+      getter (UFPIOE_FPATHIO_ERROR    e) = e ⊣ callstack
+      setter (UFPIOE_USAGE_ERROR e) cs = UFPIOE_USAGE_ERROR (e & callstack ⊢ cs)
+      setter (UFPIOE_FPATHIO_ERROR    e) cs = UFPIOE_FPATHIO_ERROR    (e & callstack ⊢ cs)
     in
       lens getter setter
 
