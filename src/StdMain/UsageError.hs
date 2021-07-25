@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
 module StdMain.UsageError
-  ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError, UsageIOError
-  , readUsage, throwUsage, usageError )
+  ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError
+  , UsageFPProcIOError, UsageIOError, readUsage, throwUsage, usageError )
 where
 
 -- base --------------------------------
