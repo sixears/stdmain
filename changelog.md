@@ -1,3 +1,7 @@
+1.3.4.0 2021-07-25
+==================
+- add UsageFPProcIOError
+
 1.3.3.0 2021-06-22
 ==================
 - add UsageFPathIOError
