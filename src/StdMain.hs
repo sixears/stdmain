@@ -69,13 +69,14 @@ import MonadIO.File  ( FileOpenMode( FileW ), HEncoding( UTF8 )
 
 -- more-unicode ------------------------
 
-import Data.MoreUnicode.Either   ( pattern 𝕷, pattern 𝕽 )
-import Data.MoreUnicode.Functor  ( (⊳) )
-import Data.MoreUnicode.Lens     ( (⊣) )
-import Data.MoreUnicode.Maybe    ( pattern 𝕵, pattern 𝕹 )
-import Data.MoreUnicode.Monad    ( (≫) )
-import Data.MoreUnicode.Monoid   ( ю )
-import Data.MoreUnicode.Text     ( 𝕋 )
+import Data.MoreUnicode.Applicative  ( (⊴) )
+import Data.MoreUnicode.Either       ( pattern 𝕷, pattern 𝕽 )
+import Data.MoreUnicode.Functor      ( (⊳) )
+import Data.MoreUnicode.Lens         ( (⊣) )
+import Data.MoreUnicode.Maybe        ( pattern 𝕵, pattern 𝕹 )
+import Data.MoreUnicode.Monad        ( (≫) )
+import Data.MoreUnicode.Monoid       ( ю )
+import Data.MoreUnicode.Text         ( 𝕋 )
 
 -- mtl ---------------------------------
 
@@ -89,7 +90,7 @@ import Natural  ( Natty, One, none, one, count )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative  ( Parser, footerDoc, progDesc )
+import Options.Applicative  ( Parser, footerDoc, helper, progDesc )
 import Options.Applicative.Help.Pretty  ( Doc
                                         , (<+>)
                                         , align, empty, fillBreak, fillSep
@@ -193,7 +194,7 @@ stdMain_ n desc p io = do
                            ]
                         )
   o ← parseOpts' (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
-                 (parseStdOptions n p)
+                 (parseStdOptions n p ⊴ helper)
   let vopts      = o ⊣ verboseOptions
       ioClasses  = vopts ⊣ ioClassFilter
       sevOpt     = o ⊣ severity
