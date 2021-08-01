@@ -1,3 +1,7 @@
+1.3.4.3 2021-08-01
+==================
+- use optparse-plus 0.1.0.0
+
 1.3.4.2 2021-08-01
 ===================
 - use Options.Applicative.Extra.helper
