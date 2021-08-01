@@ -99,7 +99,7 @@ import Options.Applicative.Help.Pretty  ( Doc
 
 -- optparse-plus -----------------------
 
-import OptParsePlus  ( parseOpts )
+import OptParsePlus  ( parseOpts' )
 
 -- prettyprinter -----------------------
 
@@ -192,8 +192,8 @@ stdMain_ n desc p io = do
                                                 ]
                            ]
                         )
-  o ← parseOpts 𝕹 (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
-                  (parseStdOptions n p)
+  o ← parseOpts' (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
+                 (parseStdOptions n p)
   let vopts      = o ⊣ verboseOptions
       ioClasses  = vopts ⊣ ioClassFilter
       sevOpt     = o ⊣ severity

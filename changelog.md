@@ -1,3 +1,8 @@
+1.3.4.1 2021-08-01
+===================
+- use parseOpts' from optparse-plus 0.0.3.0
+
+
 1.3.4.0 2021-07-25
 ==================
 - add UsageFPProcIOError
