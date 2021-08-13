@@ -31,7 +31,8 @@ import Control.DeepSeq  ( NFData )
 
 -- fpath -------------------------------
 
-import FPath.Error.FPathError  ( AsFPathError( _FPathError ), FPathIOError )
+import FPath.Error.FPathError  ( AsFPathError( _FPathError )
+                               , FPathError, FPathIOError )
 
 -- has-callstack -----------------------
 
@@ -51,7 +52,8 @@ import MonadError.IO.Error  ( AsIOError( _IOError ), IOError )
 
 import MonadIO.Error.CreateProcError  ( AsCreateProcError( _CreateProcError )
                                       , CreateProcError )
-import MonadIO.Error.ProcExitError    ( AsProcExitError( _ProcExitError ), ProcExitError )
+import MonadIO.Error.ProcExitError    ( AsProcExitError( _ProcExitError )
+                                      , ProcExitError )
 
 -- more-unicode ------------------------
 
@@ -178,9 +180,61 @@ instance HasCallstack UsageIOError where
 
 ------------------------------------------------------------
 
+data UsageFPathError = UFPE_USAGE_ERROR UsageError
+                     | UFPE_FPATH_ERROR FPathError
+  deriving (Eq,Generic,NFData)
+
+_UFPE_USAGE_ERROR ∷ Prism' UsageFPathError UsageError
+_UFPE_USAGE_ERROR = prism' (\ e → UFPE_USAGE_ERROR e)
+                           (\ case UFPE_USAGE_ERROR e → Just e; _ → Nothing)
+
+_UFPE_FPATH_ERROR ∷ Prism' UsageFPathError FPathError
+_UFPE_FPATH_ERROR = prism' (\ e → UFPE_FPATH_ERROR e)
+                           (\ case UFPE_FPATH_ERROR e → Just e; _ → Nothing)
+
+--------------------
+
+instance Exception UsageFPathError
+
+--------------------
+
+instance Show UsageFPathError where
+  show (UFPE_USAGE_ERROR e) = show e
+  show (UFPE_FPATH_ERROR e) = show e
+
+--------------------
+
+instance AsUsageError UsageFPathError where
+  _UsageError = _UFPE_USAGE_ERROR
+
+--------------------
+
+instance AsFPathError UsageFPathError where
+  _FPathError = _UFPE_FPATH_ERROR ∘ _FPathError
+
+--------------------
+
+instance Printable UsageFPathError where
+  print (UFPE_USAGE_ERROR e) = print e
+  print (UFPE_FPATH_ERROR    e) = print e
+
+--------------------
+
+instance HasCallstack UsageFPathError where
+  callstack =
+    let
+      getter (UFPE_USAGE_ERROR e) = e ⊣ callstack
+      getter (UFPE_FPATH_ERROR e) = e ⊣ callstack
+      setter (UFPE_USAGE_ERROR e) cs = UFPE_USAGE_ERROR (e & callstack ⊢ cs)
+      setter (UFPE_FPATH_ERROR e) cs = UFPE_FPATH_ERROR (e & callstack ⊢ cs)
+    in
+      lens getter setter
+
+------------------------------------------------------------
+
 data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
                        | UFPIOE_FPATHIO_ERROR FPathIOError
-  deriving (Generic,NFData)
+  deriving (Eq,Generic,NFData)
 
 _UFPIOE_USAGE_ERROR ∷ Prism' UsageFPathIOError UsageError
 _UFPIOE_USAGE_ERROR = prism' (\ e → UFPIOE_USAGE_ERROR e)

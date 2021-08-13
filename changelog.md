@@ -1,3 +1,8 @@
+1.3.5.0 2021-08-12
+==================
+- add Eq instance of UsageFPathIOError
+- add UsageFPathError
+
 1.3.4.3 2021-08-01
 ==================
 - use optparse-plus 0.1.0.0
