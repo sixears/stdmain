@@ -1,3 +1,8 @@
+1.4.0.0 2021-08-28
+==================
+- re-work UI to allow user selection of the incoming args (encouring explicit
+  use of MonadIO.Base.getArgs rather than implicit)
+
 1.3.5.0 2021-08-12
 ==================
 - add Eq instance of UsageFPathIOError

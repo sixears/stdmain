@@ -1,19 +1,19 @@
 module StdMain
-  ( LogTIO
-  , stdMain, stdMainSimple, stdMain', stdMain'', stdMainT, stdMainT'
-  , stdMainNoDR, stdMainNoDR'
+  ( LogTIO, stdMain, stdMain_, stdMainSimple, stdMainNoDR
+  -- DEPRECATED
+  , stdMainNoDR', stdMain''
   )
 where
 
 -- base --------------------------------
 
-import Control.Applicative     ( pure )
-import Control.Exception       ( Exception )
-import Control.Monad.IO.Class  ( MonadIO )
-import Data.Function           ( ($) )
-import Data.String             ( String, unwords, words )
-import System.IO               ( IO )
-import Text.Show               ( Show( show ) )
+import Control.Applicative  ( pure )
+import Control.Exception    ( Exception )
+import Data.Function        ( ($) )
+import Data.String          ( unwords, words )
+import Data.Tuple           ( uncurry )
+import System.IO            ( IO )
+import Text.Show            ( Show( show ) )
 
 -- base-unicode-symbols ----------------
 
@@ -64,6 +64,8 @@ import MonadError.IO.Error  ( AsIOError )
 
 -- monadio-plus ------------------------
 
+import MonadIO       ( MonadIO, liftIO )
+import MonadIO.Base  ( getArgs )
 import MonadIO.File  ( FileOpenMode( FileW ), HEncoding( UTF8 )
                      , fileWritable, withFile )
 
@@ -76,13 +78,12 @@ import Data.MoreUnicode.Lens         ( (⊣) )
 import Data.MoreUnicode.Maybe        ( pattern 𝕵, pattern 𝕹 )
 import Data.MoreUnicode.Monad        ( (≫) )
 import Data.MoreUnicode.Monoid       ( ю )
+import Data.MoreUnicode.String       ( 𝕊 )
 import Data.MoreUnicode.Text         ( 𝕋 )
 
 -- mtl ---------------------------------
 
 import Control.Monad.Except  ( ExceptT, throwError )
-import Control.Monad.Reader  ( ReaderT, runReaderT )
-import Control.Monad.Trans   ( lift )
 
 -- natural-plus ------------------------
 
@@ -100,7 +101,7 @@ import Options.Applicative.Help.Pretty  ( Doc
 
 -- optparse-plus -----------------------
 
-import OptParsePlus  ( parseOpts )
+import OptParsePlus  ( parseOpts_ )
 
 -- prettyprinter -----------------------
 
@@ -112,7 +113,7 @@ import qualified Data.Text.Prettyprint.Doc  as  PPDoc
 
 import StdMain.StdOptions      ( DryRunLevel, HasDryRunLevel( dryRunLevel )
                                , StdOptions
-                               , callstackOnError, ifDryRun, options
+                               , callstackOnError, dryRunNum, options
                                , parseStdOptions, profCallstackOnError
                                )
 import StdMain.UsageError      ( AsUsageError, UsageIOError, throwUsage )
@@ -123,24 +124,35 @@ import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
 
 --------------------------------------------------------------------------------
 
-{- | Like `stdMain`, but gives the incoming `io` full access to the `StdOptions`
-     object. -}
+type LogTIO ω ε = LoggingT (Log ω) (ExceptT ε IO)
+type LogTIOM ε  = LoggingT (Log MockIOClass) (ExceptT ε IO)
 
+------------------------------------------------------------
+
+{- | Disentangle dry-run level, options from a `StdOptions`. -}
+drOpts ∷ StdOptions ν ρ → (DryRunLevel ν, ρ)
+drOpts o = (o ⊣ dryRunLevel, o ⊣ options)
+
+----------------------------------------
+
+{- | Execute some logging IO, which has access to a dry-run level (parsed
+     from arguments).  A parser is used to parse those arguments from input. -}
 stdMain_ ∷ ∀ ε ρ σ ω ν μ .
            (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
             HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω,
             HasCallStack) ⇒
-           Natty ν  -- ^ `DryRun` level
-         → 𝕋        -- ^ program synopsis
-         → Parser ρ -- ^ options parser
-         → (StdOptions ν ρ → LoggingT (Log ω) (ExceptT ε IO) σ) -- ^ program
+           Natty ν                         -- ^ maximum `DryRun` level
+         → 𝕋                               -- ^ program synopsis
+         → Parser ρ                        -- ^ options parser
+         → (StdOptions ν ρ → LogTIO ω ε σ) -- ^ program
+         → [𝕊]                             -- ^ args to parse (e.g., cmdline)
          → μ ()
-stdMain_ n desc p io = do
-  let optionDesc ∷ String → [String] → Doc
+stdMain_ n desc p io args = do
+  let optionDesc ∷ 𝕊 → [𝕊] → Doc
       optionDesc name descn =
         let para = fillSep $ text ⊳ (words $ unwords descn)
          in indent 2 (fillBreak 14 (string name) <+> align para)
-      optionDesc' ∷ String → Doc → Doc
+      optionDesc' ∷ 𝕊 → Doc → Doc
       optionDesc' name para =
         indent 2 (fillBreak 14 (string name) <+> align para)
       footerDesc ∷ Doc
@@ -193,7 +205,7 @@ stdMain_ n desc p io = do
                                                 ]
                            ]
                         )
-  o ← parseOpts (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
+  o ← parseOpts_ args (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
                 (parseStdOptions n p ⊴ helper)
   let vopts      = o ⊣ verboseOptions
       ioClasses  = vopts ⊣ ioClassFilter
@@ -222,125 +234,75 @@ stdMain_ n desc p io = do
                   𝕽 𝕹     → withFile UTF8 (FileW $ 𝕵 0640)
                                           (unLogFile logfn) (logIOToFile io o)
 
+----------------------------------------
 
-----------
-
-{- | Execute the 'main' of a standard program with standard options that returns
-     a `toExitCode`, that may throw exceptions; with logging set up as requested
-     by cmdline options.
- -}
-stdMain ∷ ∀ ε ρ σ ω ν μ .
-          (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
-          Natty ν
-        → 𝕋
-        → Parser ρ
-        → (DryRunLevel ν → ρ → LoggingT (Log ω) (ExceptT ε IO) σ)
-        → μ ()
-stdMain n desc p io =
-  stdMain_ n desc p (\ o → io (o ⊣ dryRunLevel) (o ⊣ options))
-
-
---------------------
-
-{- | Like `stdMain`, but with `DryRun` option. -}
-
-stdMainNoDR ∷ ∀ ε ρ σ ω μ .
-              (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-               HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
-              𝕋
-            → Parser ρ
-            → (ρ → LoggingT (Log ω) (ExceptT ε IO) σ)
-            → μ ()
-
-stdMainNoDR desc p io =
-  stdMain_ none desc p (\ o → io (o ⊣ options))
-
---------------------
-
-type LogTIO ω ε = (LoggingT (Log ω) (ExceptT ε IO))
-
-{- | Like StdMain, but runs the io in a `ReaderT (DryRunLevel ν)` context. -}
-stdMainT ∷ ∀ ε ρ σ ω ν μ .
-          (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω) ⇒
-          Natty ν
-        → 𝕋
-        → Parser ρ
-        → (ρ → ReaderT (DryRunLevel ν) (LogTIO ω ε) σ)
-        → μ ()
-stdMainT n desc p io =
-  stdMain_ n desc p (\ o → runReaderT (io (o ⊣ options)) (o ⊣ dryRunLevel))
-
-----------
-
-{- | Like StdMainT, but logs to `MockIOClass`. -}
-stdMainT' ∷ ∀ ε ρ σ ν μ .
+{- | `stdMain_`  with `ω` fixed to `MockIOClass` (i.e., logging with
+     MockIOClass) and `ν` fixed to `one` (i.e., a single dry-run level). -}
+stdMain ∷ ∀ ε ρ σ μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
            HasCallstack ε, ToExitCode σ) ⇒
-          Natty ν
-        → 𝕋
-        → Parser ρ
-        → (ρ → ReaderT (DryRunLevel ν) (LogTIO MockIOClass ε) σ)
+          𝕋                                   -- ^ program description
+        → Parser ρ                            -- ^ options parser
+        → (DryRunLevel One → ρ → LogTIOM ε σ) -- ^ main program
+        → [𝕊]                                 -- ^ arguments to parse
         → μ ()
-stdMainT' = stdMainT
+stdMain desc p io = stdMain_ one desc p (\ o → uncurry io (drOpts o))
 
-----------
+----------------------------------------
 
-{- | Version of `stdMain`, with more simple type; where the error is
-     specifically a `UsageIOError`, and there is a single dry-run level which is
-     translated to DoMock/NoMock; intended for simple IO programs.
+{- | Version of `stdMain`, with more simple type; the args are taken directly
+     from the cmdline; where the error is specifically a `UsageIOError`, and
+     there is a single dry-run level which is translated to DoMock/NoMock;
+     intended for simple IO programs.
  -}
 stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
                 𝕋
               → Parser ρ
-              → (DoMock → ρ → (LogTIO MockIOClass UsageIOError) σ)
+              → (DoMock → ρ → (LogTIOM UsageIOError) σ)
               → μ ()
 stdMainSimple desc parser io =
-  let go opts = do
-        mock ← ifDryRun DoMock NoMock
-        lift $ io mock opts
-   in stdMainT one desc parser go
+  let lvlToDoMock l = if 0 ≤ dryRunNum l then DoMock else NoMock
+   in getArgs ≫ stdMain desc parser (\ l o → io (lvlToDoMock l) o)
 
 ----------------------------------------
 
-{- | `stdMain` with `ω` fixed to `MockIOClass` (i.e., logging with
-     MockIOClass). -}
-stdMain' ∷ ∀ ε ρ σ ν μ .
+{- | Like `stdMain`, but with no `DryRun` option and `ω` fixed to
+     `MockIOClass`. -}
+stdMainNoDR ∷ ∀ ε ρ σ μ .
+              (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
+               HasCallstack ε, ToExitCode σ) ⇒
+              𝕋
+            → Parser ρ
+            → (ρ → LogTIOM ε σ)
+            → [𝕊]
+            → μ ()
+stdMainNoDR desc p io = stdMain_ none desc p (\ o → io (o ⊣ options))
+
+-- deprecated functions ------------------------------------
+
+{- | `stdMain_` with `ω` fixed to `MockIOClass` (i.e., logging with
+      MockIOClass) and `ν` fixed to `one` (i.e., a single dry-run level). -}
+stdMain'' ∷ ∀ ε ρ σ μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
            HasCallstack ε, ToExitCode σ) ⇒
-          Natty ν
-        → 𝕋
+          𝕋
         → Parser ρ
-        → (DryRunLevel ν → ρ → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
+        → (DryRunLevel One → ρ → LogTIOM ε σ)
         → μ ()
-stdMain' = stdMain
+{-# DEPRECATED stdMain'' "use getArgs ≫ stdMain" #-}
+stdMain'' desc parser io =
+  liftIO getArgs ≫ stdMain desc parser io
 
 --------------------
-
-{- | Like `stdMain'`, but with `DryRun` option. -}
 
 stdMainNoDR' ∷ ∀ ε ρ σ μ .
               (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
                HasCallstack ε, ToExitCode σ) ⇒
               𝕋
             → Parser ρ
-            → (ρ → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
+            → (ρ → LogTIOM ε σ)
             → μ ()
-
-stdMainNoDR' desc p io =
-  stdMain_ none desc p (\ o → io (o ⊣ options))
-
-----------------------------------------
-
-{- | `stdMain'` with `ν` fixed to `one` (i.e., a single dry-run level). -}
-stdMain'' ∷ ∀ ε ρ σ μ .
-          (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           HasCallstack ε, ToExitCode σ) ⇒
-          𝕋
-        → Parser ρ
-        → (DryRunLevel One → ρ → LoggingT (Log MockIOClass) (ExceptT ε IO) σ)
-        → μ ()
-stdMain'' = stdMain' one
+{-# DEPRECATED stdMainNoDR' "use getArgs ≫ stdMainNoDR" #-}
+stdMainNoDR' desc parser io = getArgs ≫ stdMainNoDR desc parser io
 
 -- that's all, folks! ----------------------------------------------------------

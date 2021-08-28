@@ -1,9 +1,9 @@
 module StdMain.StdOptions
   ( DryRunLevel, HasDryRun, HasDryRunLevel( dryRunLevel, level )
   , ReadDryRunLevel, StdOptions
-  , askDryRunL, callstackOnError, dryRunOff, dryRunOn, dryRunP, dryRun1P
-  , dryRun2P, ifDryRun, ifDryRunEq, ifDryRunGE, options, parseStdOptions
-  , profCallstackOnError, unlessDryRunGE
+  , askDryRunL, callstackOnError, dryRunLvl, dryRunNum, dryRunOff, dryRunOn
+  , dryRunP, dryRun1P, dryRun2P, ifDryRun, ifDryRunEq, ifDryRunGE, options
+  , parseStdOptions, profCallstackOnError, unlessDryRunGE
   )
 where
 
@@ -95,6 +95,8 @@ class HasDryRunLevel n c | c → n where
   level       ∷ Lens' c (AtMost n DryRunN)
   {-# INLINE level #-}
   level       =  dryRunLevel ∘ level
+  dryRunNum   ∷ c → ℕ
+  dryRunNum   = count ∘ view dryRunLevel
 
 instance HasDryRunLevel n (DryRunLevel n) where
   dryRunLevel = id
