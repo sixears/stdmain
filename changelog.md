@@ -1,3 +1,7 @@
+1.5.0.0 2021-08-29
+==================
+- change UI of `stdMain` to pass a `DoMock` instance to the `io`.
+
 1.4.0.0 2021-08-28
 ==================
 - re-work UI to allow user selection of the incoming args (encouring explicit

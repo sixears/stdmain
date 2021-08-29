@@ -1,5 +1,5 @@
 module StdMain
-  ( LogTIO, stdMain, stdMain_, stdMainSimple, stdMainNoDR
+  ( LogTIO, lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
   -- DEPRECATED
   , stdMainNoDR', stdMain''
   )
@@ -9,6 +9,7 @@ where
 
 import Control.Applicative  ( pure )
 import Control.Exception    ( Exception )
+import Data.Bifunctor       ( first )
 import Data.Function        ( ($) )
 import Data.String          ( unwords, words )
 import Data.Tuple           ( uncurry )
@@ -236,17 +237,23 @@ stdMain_ n desc p io args = do
 
 ----------------------------------------
 
+lvlToDoMock ∷ HasDryRunLevel One ν ⇒ ν → DoMock
+lvlToDoMock l = if 0 ≤ dryRunNum l then DoMock else NoMock
+
 {- | `stdMain_`  with `ω` fixed to `MockIOClass` (i.e., logging with
-     MockIOClass) and `ν` fixed to `one` (i.e., a single dry-run level). -}
+     MockIOClass), `ν` fixed to `one` (i.e., a single dry-run level); and that
+     dry-run level is translated to a `DoMock`.
+ -}
 stdMain ∷ ∀ ε ρ σ μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
            HasCallstack ε, ToExitCode σ) ⇒
-          𝕋                                   -- ^ program description
-        → Parser ρ                            -- ^ options parser
-        → (DryRunLevel One → ρ → LogTIOM ε σ) -- ^ main program
-        → [𝕊]                                 -- ^ arguments to parse
+          𝕋                          -- ^ program description
+        → Parser ρ                   -- ^ options parser
+        → (DoMock → ρ → LogTIOM ε σ) -- ^ main program
+        → [𝕊]                        -- ^ arguments to parse
         → μ ()
-stdMain desc p io = stdMain_ one desc p (\ o → uncurry io (drOpts o))
+stdMain desc p io =
+  stdMain_ one desc p (\ o → uncurry io (first lvlToDoMock $ drOpts o))
 
 ----------------------------------------
 
@@ -260,9 +267,7 @@ stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
               → Parser ρ
               → (DoMock → ρ → (LogTIOM UsageIOError) σ)
               → μ ()
-stdMainSimple desc parser io =
-  let lvlToDoMock l = if 0 ≤ dryRunNum l then DoMock else NoMock
-   in getArgs ≫ stdMain desc parser (\ l o → io (lvlToDoMock l) o)
+stdMainSimple desc parser io = getArgs ≫ stdMain desc parser io
 
 ----------------------------------------
 
@@ -291,7 +296,7 @@ stdMain'' ∷ ∀ ε ρ σ μ .
         → μ ()
 {-# DEPRECATED stdMain'' "use getArgs ≫ stdMain" #-}
 stdMain'' desc parser io =
-  liftIO getArgs ≫ stdMain desc parser io
+  liftIO getArgs ≫ stdMain_ one desc parser (\ o → uncurry io (drOpts o))
 
 --------------------
 
