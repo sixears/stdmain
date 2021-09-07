@@ -1,3 +1,7 @@
+1.5.0.1 2021-09-07
+==================
+- fix lvlToDoMock
+
 1.5.0.0 2021-08-29
 ==================
 - change UI of `stdMain` to pass a `DoMock` instance to the `io`.

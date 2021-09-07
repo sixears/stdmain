@@ -11,6 +11,7 @@ import Control.Applicative  ( pure )
 import Control.Exception    ( Exception )
 import Data.Bifunctor       ( first )
 import Data.Function        ( ($) )
+import Data.Ord             ( (<) )
 import Data.String          ( unwords, words )
 import Data.Tuple           ( uncurry )
 import System.IO            ( IO )
@@ -238,7 +239,7 @@ stdMain_ n desc p io args = do
 ----------------------------------------
 
 lvlToDoMock ∷ HasDryRunLevel One ν ⇒ ν → DoMock
-lvlToDoMock l = if 0 ≤ dryRunNum l then DoMock else NoMock
+lvlToDoMock l = if 0 < dryRunNum l then DoMock else NoMock
 
 {- | `stdMain_`  with `ω` fixed to `MockIOClass` (i.e., logging with
      MockIOClass), `ν` fixed to `one` (i.e., a single dry-run level); and that
