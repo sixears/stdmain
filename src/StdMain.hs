@@ -1,5 +1,6 @@
 module StdMain
-  ( LogTIO, lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
+  ( LogTIO, Overwrite(..)
+  , lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
   , checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkMkdirs
   , checkOutputFiles, checkRunNICmds, checkRunNICmds', runNICmds
   , throwUsageErrors
