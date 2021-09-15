@@ -1,3 +1,10 @@
+1.5.1.0 2021-09-15
+==================
+- add checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkMkdirs,
+  checkOutputFiles, checkRunNICmds, checkRunNICmds', runNICmds,
+  throwUsageErrors
+
+
 1.5.0.1 2021-09-07
 ==================
 - fix lvlToDoMock
