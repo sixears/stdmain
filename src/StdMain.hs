@@ -173,7 +173,7 @@ import StdMain.StdOptions      ( DryRunLevel, HasDryRunLevel( dryRunLevel )
                                , callstackOnError, dryRunNum, options
                                , parseStdOptions, profCallstackOnError
                                )
-import StdMain.UsageError      ( AsUsageError, UsageIOError, throwUsage )
+import StdMain.UsageError      ( AsUsageError, UsageFPProcIOError, throwUsage )
 import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
                                , csopt, ioClassFilter, logFile, showIOCs
                                , unLogFile, verboseDesc, verboseOptions
@@ -327,7 +327,7 @@ stdMain desc p io =
 stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
                 𝕋
               → Parser ρ
-              → (DoMock → ρ → (LogTIOM UsageIOError) σ)
+              → (DoMock → ρ → (LogTIOM UsageFPProcIOError) σ)
               → μ ()
 stdMainSimple desc parser io = getArgs ≫ stdMain desc parser io
 

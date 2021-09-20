@@ -1,7 +1,11 @@
+1.5.2.0 2021-09-19
+==================
+- stdMainSimple now throws a UsageFPProcIOError
+
 1.5.1.0 2021-09-15
 ==================
-- add checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkMkdirs,
-  checkOutputFiles, checkRunNICmds, checkRunNICmds', runNICmds,
+- add Overwrite(..), checkDirW, checkExtantsDups, checkFileW, checkFileWs,
+  checkMkdirs, checkOutputFiles, checkRunNICmds, checkRunNICmds', runNICmds,
   throwUsageErrors
 
 
