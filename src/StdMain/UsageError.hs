@@ -238,7 +238,7 @@ data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
 
 _UFPIOE_USAGE_ERROR ∷ Prism' UsageFPathIOError UsageError
 _UFPIOE_USAGE_ERROR = prism' (\ e → UFPIOE_USAGE_ERROR e)
-                           (\ case UFPIOE_USAGE_ERROR e → Just e; _ → Nothing)
+                             (\ case UFPIOE_USAGE_ERROR e → Just e; _ → Nothing)
 
 _UFPIOE_FPATHIO_ERROR ∷ Prism' UsageFPathIOError FPathIOError
 _UFPIOE_FPATHIO_ERROR = prism' (\ e → UFPIOE_FPATHIO_ERROR e)
@@ -295,7 +295,7 @@ instance HasCallstack UsageFPathIOError where
 data UsageFPProcIOError = UFPPIOE_UFPIO_ERROR UsageFPathIOError
                         | UFPPIOE_CPROC_ERROR CreateProcError
                         | UFPPIOE_PEXIT_ERROR ProcExitError
-  deriving (Generic,NFData)
+  deriving (Eq,Generic,NFData)
 
 _UFPPIOE_UFPIO_ERROR ∷ Prism' UsageFPProcIOError UsageFPathIOError
 _UFPPIOE_UFPIO_ERROR =

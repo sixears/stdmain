@@ -1,3 +1,7 @@
+1.5.3.0 2021-09-21
+==================
+- UsageFPProcIOError now has a (derived) Eq instance
+
 1.5.2.0 2021-09-19
 ==================
 - stdMainSimple now throws a UsageFPProcIOError
