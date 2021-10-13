@@ -272,8 +272,8 @@ instance AsFPathError UsageFPathIOError where
 --------------------
 
 instance Printable UsageFPathIOError where
-  print (UFPIOE_USAGE_ERROR e) = print e
-  print (UFPIOE_FPATHIO_ERROR    e) = print e
+  print (UFPIOE_USAGE_ERROR   e) = print e
+  print (UFPIOE_FPATHIO_ERROR e) = print e
 
 --------------------
 

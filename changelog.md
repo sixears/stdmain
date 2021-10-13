@@ -1,3 +1,7 @@
+1.5.3.1 2021-10-13
+==================
+- upgrade dependencies
+
 1.5.3.0 2021-09-21
 ==================
 - UsageFPProcIOError now has a (derived) Eq instance

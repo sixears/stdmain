@@ -62,6 +62,10 @@ import FPath.Error.FPathError  ( AsFPathError )
 
 import HasCallstack  ( HasCallstack )
 
+-- lens --------------------------------
+
+import Control.Lens.Getter  ( view )
+
 -- log-plus ----------------------------
 
 import Log              ( Log
@@ -112,6 +116,8 @@ import MonadIO.File  ( FileOpenMode( FileW ), FileType( Directory )
                      , HEncoding( UTF8 )
                      , devnull, fileWritable, ftype, withFile
                      )
+import MonadIO.NamedHandle
+                     ( handle )
 import MonadIO.Process.ExitStatus
                      ( ExitStatus )
 import MonadIO.Process.OutputHandles
@@ -295,7 +301,7 @@ stdMain_ n desc p io args = do
                   𝕷 e     → throwError e
                   𝕽 (𝕵 e) → throwUsage $ "bad log file: " ⊕ e
                   𝕽 𝕹     → withFile UTF8 (FileW $ 𝕵 0640)
-                                          (unLogFile logfn) (logIOToFile io o)
+                                          (unLogFile logfn) (logIOToFile io o ∘ view handle)
 
 ----------------------------------------
 
