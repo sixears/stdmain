@@ -1,3 +1,7 @@
+1.5.4.0 2021-10-18
+==================
+- add UsageParseFPProcIOError
+
 1.5.3.1 2021-10-13
 ==================
 - upgrade dependencies

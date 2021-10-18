@@ -11,7 +11,7 @@ import Control.Exception  ( Exception )
 import Control.Monad      ( return )
 import Data.Eq            ( Eq( (==) ) )
 import Data.Function      ( ($), (&), id )
-import Data.Maybe         ( Maybe( Just, Nothing ), maybe )
+import Data.Maybe         ( maybe )
 import GHC.Generics       ( Generic )
 import GHC.Stack          ( CallStack, HasCallStack, callStack )
 import Text.Read          ( Read, readMaybe )
@@ -57,11 +57,16 @@ import MonadIO.Error.ProcExitError    ( AsProcExitError( _ProcExitError )
 
 -- more-unicode ------------------------
 
-import Data.MoreUnicode.Lens  ( (⊣), (⊢) )
+import Data.MoreUnicode.Lens   ( (⊣), (⊢) )
+import Data.MoreUnicode.Maybe  ( pattern 𝕵, pattern 𝕹 )
 
 -- mtl ---------------------------------
 
 import Control.Monad.Except  ( MonadError, throwError )
+
+-- parsec-plus -------------------------
+
+import ParsecPlus  ( AsParseError( _ParseError ), ParseError )
 
 -- text --------------------------------
 
@@ -134,11 +139,11 @@ data UsageIOError = UIOE_USAGE_ERROR UsageError
 
 _UIOE_USAGE_ERROR ∷ Prism' UsageIOError UsageError
 _UIOE_USAGE_ERROR = prism' (\ e → UIOE_USAGE_ERROR e)
-                           (\ case UIOE_USAGE_ERROR e → Just e; _ → Nothing)
+                           (\ case UIOE_USAGE_ERROR e → 𝕵 e; _ → 𝕹)
 
 _UIOE_IO_ERROR ∷ Prism' UsageIOError IOError
 _UIOE_IO_ERROR = prism' (\ e → UIOE_IO_ERROR e)
-                        (\ case UIOE_IO_ERROR e → Just e; _ → Nothing)
+                        (\ case UIOE_IO_ERROR e → 𝕵 e; _ → 𝕹)
 
 --------------------
 
@@ -186,11 +191,11 @@ data UsageFPathError = UFPE_USAGE_ERROR UsageError
 
 _UFPE_USAGE_ERROR ∷ Prism' UsageFPathError UsageError
 _UFPE_USAGE_ERROR = prism' (\ e → UFPE_USAGE_ERROR e)
-                           (\ case UFPE_USAGE_ERROR e → Just e; _ → Nothing)
+                           (\ case UFPE_USAGE_ERROR e → 𝕵 e; _ → 𝕹)
 
 _UFPE_FPATH_ERROR ∷ Prism' UsageFPathError FPathError
 _UFPE_FPATH_ERROR = prism' (\ e → UFPE_FPATH_ERROR e)
-                           (\ case UFPE_FPATH_ERROR e → Just e; _ → Nothing)
+                           (\ case UFPE_FPATH_ERROR e → 𝕵 e; _ → 𝕹)
 
 --------------------
 
@@ -238,11 +243,11 @@ data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
 
 _UFPIOE_USAGE_ERROR ∷ Prism' UsageFPathIOError UsageError
 _UFPIOE_USAGE_ERROR = prism' (\ e → UFPIOE_USAGE_ERROR e)
-                             (\ case UFPIOE_USAGE_ERROR e → Just e; _ → Nothing)
+                             (\ case UFPIOE_USAGE_ERROR e → 𝕵 e; _ → 𝕹)
 
 _UFPIOE_FPATHIO_ERROR ∷ Prism' UsageFPathIOError FPathIOError
 _UFPIOE_FPATHIO_ERROR = prism' (\ e → UFPIOE_FPATHIO_ERROR e)
-                        (\ case UFPIOE_FPATHIO_ERROR e → Just e; _ → Nothing)
+                        (\ case UFPIOE_FPATHIO_ERROR e → 𝕵 e; _ → 𝕹)
 
 --------------------
 
@@ -300,17 +305,17 @@ data UsageFPProcIOError = UFPPIOE_UFPIO_ERROR UsageFPathIOError
 _UFPPIOE_UFPIO_ERROR ∷ Prism' UsageFPProcIOError UsageFPathIOError
 _UFPPIOE_UFPIO_ERROR =
   prism' (\ e → UFPPIOE_UFPIO_ERROR e)
-         (\ case UFPPIOE_UFPIO_ERROR e → Just e; _ → Nothing)
+         (\ case UFPPIOE_UFPIO_ERROR e → 𝕵 e; _ → 𝕹)
 
 _UFPPIOE_CPROC_ERROR ∷ Prism' UsageFPProcIOError CreateProcError
 _UFPPIOE_CPROC_ERROR =
   prism' (\ e → UFPPIOE_CPROC_ERROR e)
-         (\ case UFPPIOE_CPROC_ERROR e → Just e; _ → Nothing)
+         (\ case UFPPIOE_CPROC_ERROR e → 𝕵 e; _ → 𝕹)
 
 _UFPPIOE_PEXIT_ERROR ∷ Prism' UsageFPProcIOError ProcExitError
 _UFPPIOE_PEXIT_ERROR =
   prism' (\ e → UFPPIOE_PEXIT_ERROR e)
-         (\ case UFPPIOE_PEXIT_ERROR e → Just e; _ → Nothing)
+         (\ case UFPPIOE_PEXIT_ERROR e → 𝕵 e; _ → 𝕹)
 
 --------------------
 
@@ -371,5 +376,60 @@ instance HasCallstack UsageFPProcIOError where
         UFPPIOE_PEXIT_ERROR (e & callstack ⊢ cs)
     in
       lens getter setter
+
+------------------------------------------------------------
+
+{- | An Error for Usage, Parse, FPath, CreateProc, ProcExit, and IO Errors. -}
+
+data UsageParseFPProcIOError = UPFPPIOE_USAGE_ETC_ERROR UsageFPProcIOError
+                             | UPFPPIOE_PARSE_ERROR     ParseError
+  deriving (Eq,Show)
+
+_UPFPPIOE_USAGE_ETC_ERROR ∷ Prism' UsageParseFPProcIOError
+                                   UsageFPProcIOError
+_UPFPPIOE_USAGE_ETC_ERROR =
+  prism' UPFPPIOE_USAGE_ETC_ERROR
+         (\ case UPFPPIOE_USAGE_ETC_ERROR e → 𝕵 e; _ → 𝕹)
+
+_UPFPPIOE_PARSE_ERROR ∷ Prism' UsageParseFPProcIOError ParseError
+_UPFPPIOE_PARSE_ERROR =
+  prism' UPFPPIOE_PARSE_ERROR (\ case UPFPPIOE_PARSE_ERROR e → 𝕵 e; _ → 𝕹)
+
+instance Exception UsageParseFPProcIOError
+
+instance Printable UsageParseFPProcIOError where
+  print (UPFPPIOE_USAGE_ETC_ERROR e) = print e
+  print (UPFPPIOE_PARSE_ERROR     e) = print e
+
+instance HasCallstack UsageParseFPProcIOError where
+  callstack =
+    let
+      getter (UPFPPIOE_USAGE_ETC_ERROR   e) = e ⊣ callstack
+      getter (UPFPPIOE_PARSE_ERROR e) = e ⊣ callstack
+      setter (UPFPPIOE_USAGE_ETC_ERROR   e) cs =
+        UPFPPIOE_USAGE_ETC_ERROR (e & callstack ⊢ cs)
+      setter (UPFPPIOE_PARSE_ERROR e) cs =
+        UPFPPIOE_PARSE_ERROR (e & callstack ⊢ cs)
+    in
+      lens getter setter
+
+instance AsCreateProcError UsageParseFPProcIOError where
+  _CreateProcError  = _UPFPPIOE_USAGE_ETC_ERROR ∘ _CreateProcError
+
+instance AsFPathError UsageParseFPProcIOError where
+  _FPathError  = _UPFPPIOE_USAGE_ETC_ERROR ∘ _FPathError
+
+instance AsIOError UsageParseFPProcIOError where
+  _IOError = _UPFPPIOE_USAGE_ETC_ERROR ∘ _IOError
+
+instance AsParseError UsageParseFPProcIOError where
+  _ParseError = _UPFPPIOE_PARSE_ERROR
+
+instance AsProcExitError UsageParseFPProcIOError where
+  _ProcExitError  = _UPFPPIOE_USAGE_ETC_ERROR ∘ _ProcExitError
+
+instance AsUsageError UsageParseFPProcIOError where
+  _UsageError  = _UPFPPIOE_USAGE_ETC_ERROR ∘ _UsageError
+
 
 -- that's all, folks! ----------------------------------------------------------
