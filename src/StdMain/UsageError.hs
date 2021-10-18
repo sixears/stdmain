@@ -2,7 +2,9 @@
 
 module StdMain.UsageError
   ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError
-  , UsageFPProcIOError, UsageIOError, readUsage, throwUsage, usageError )
+  , UsageFPProcIOError, UsageIOError, UsageParseFPProcIOError
+  , readUsage, throwUsage, usageError
+  )
 where
 
 -- base --------------------------------

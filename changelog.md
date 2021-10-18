@@ -1,3 +1,7 @@
+1.5.5.0 2021-10-18
+==================
+- export UsageParseFPProcIOError
+
 1.5.4.0 2021-10-18
 ==================
 - add UsageParseFPProcIOError
