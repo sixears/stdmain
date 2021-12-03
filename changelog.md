@@ -1,3 +1,7 @@
+1.5.6.1 2021-12-03
+==================
+- correct polarity of checkInputFile
+
 1.5.6.0 2021-12-03
 ==================
 - add checkInputFile{,s}

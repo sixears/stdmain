@@ -29,7 +29,7 @@ import Text.Show            ( Show( show ) )
 
 -- base-unicode-symbols ----------------
 
-import Data.Eq.Unicode        ( (≡) )
+import Data.Eq.Unicode        ( (≡), (≢) )
 import Data.Function.Unicode  ( (∘) )
 import Data.Monoid.Unicode    ( (⊕) )
 import Data.Ord.Unicode       ( (≤) )
@@ -527,7 +527,7 @@ checkInputFile ∷ ∀ ε ψ ω μ .
                   Default ω, HasIOClass ω, HasDoMock ω, MonadLog (Log ω) μ) ⇒
                  ψ → μ (𝕄 𝕋)
 checkInputFile input =
-  bool 𝕹 (𝕵 $ [fmt|No such input file: '%T'|] input) ∘ (≡ FExists) ⊳
+  bool 𝕹 (𝕵 $ [fmt|No such input file: '%T'|] input) ∘ (≢ FExists) ⊳
     lfexists Debug FExists input NoMock
 
 --------------------
