@@ -1,9 +1,9 @@
 module StdMain
   ( LogTIO, Overwrite(..)
   , lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
-  , checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkMkdirs
-  , checkOutputFiles, checkRunNICmds, checkRunNICmds', runNICmds
-  , throwUsageErrors
+  , checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkInputFile
+  , checkInputFiles, checkMkdirs, checkOutputFiles, checkRunNICmds
+  , checkRunNICmds', runNICmds, throwUsageErrors
 
   -- DEPRECATED
   , stdMainNoDR', stdMain''
@@ -16,6 +16,7 @@ import Control.Applicative  ( pure )
 import Control.Exception    ( Exception )
 import Control.Monad        ( foldM, forM, forM_, mapM, return, when )
 import Data.Bifunctor       ( first )
+import Data.Bool            ( bool )
 import Data.Eq              ( Eq )
 import Data.Foldable        ( Foldable )
 import Data.Function        ( ($) )
@@ -55,6 +56,8 @@ import Exited  ( ToExitCode )
 
 import FPath.AbsDir            ( AbsDir )
 import FPath.AbsFile           ( AbsFile )
+import FPath.AsFilePath        ( AsFilePath )
+import FPath.File              ( FileAs )
 import FPath.Dirname           ( dirname )
 import FPath.Error.FPathError  ( AsFPathError )
 
@@ -76,7 +79,7 @@ import Log.HasSeverity  ( severity )
 -- logging-effect ----------------------
 
 import Control.Monad.Log  ( LoggingT, MonadLog
-                          , Severity( Informational, Notice, Warning ) )
+                          , Severity( Debug, Informational, Notice, Warning ) )
 
 -- mockio ------------------------------
 
@@ -93,7 +96,7 @@ import MockIO.RenderDoMock  ( renderWithDoMock )
 import MockIO.Directory  ( mkdir )
 import MockIO.File       ( AccessMode( ACCESS_W, ACCESS_WX )
                          , FExists( FExists, NoFExists )
-                         , access, fexists, fexists', lfexists', stat
+                         , access, fexists, fexists', lfexists, lfexists', stat
                          )
 import MockIO.Process    ( (!) )
 import MockIO.Process.MLCmdSpec
@@ -515,6 +518,27 @@ throwUsageErrors _        _  []   = return ()
 throwUsageErrors do_mock msg errs = do
     forM_ errs errIO'
     when (NoMock ≡ do_mock) $ throwUsage msg
+
+----------------------------------------
+
+checkInputFile ∷ ∀ ε ψ ω μ .
+                 (MonadIO μ, FileAs ψ, AsFilePath ψ, Printable ψ,
+                  AsIOError ε, Printable ε, HasCallStack, MonadError ε μ,
+                  Default ω, HasIOClass ω, HasDoMock ω, MonadLog (Log ω) μ) ⇒
+                 ψ → μ (𝕄 𝕋)
+checkInputFile input =
+  bool 𝕹 (𝕵 $ [fmt|No such input file: '%T'|] input) ∘ (≡ FExists) ⊳
+    lfexists Debug FExists input NoMock
+
+--------------------
+
+{- | Return a text message for every non-extant file. -}
+checkInputFiles ∷ ∀ ε ψ ω μ .
+                  (MonadIO μ, FileAs ψ, AsFilePath ψ, Printable ψ,
+                   AsIOError ε, Printable ε, HasCallStack, MonadError ε μ,
+                   Default ω, HasIOClass ω, HasDoMock ω, MonadLog (Log ω) μ) ⇒
+                  [ψ] → μ [𝕋]
+checkInputFiles is = catMaybes ⊳ mapM checkInputFile is
 
 ----------------------------------------
 

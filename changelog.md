@@ -1,3 +1,7 @@
+1.5.6.0 2021-12-03
+==================
+- add checkInputFile{,s}
+
 1.5.5.0 2021-10-18
 ==================
 - export UsageParseFPProcIOError
