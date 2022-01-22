@@ -71,7 +71,7 @@ import Control.Lens.Getter  ( view )
 
 -- log-plus ----------------------------
 
-import Log              ( Log
+import Log              ( Log, logIOT
                         , logToFile', logFilter, logToStderr', stdRenderers )
 import Log.LogEntry     ( LogEntry, attrs, mapPrefixDoc )
 import Log.HasSeverity  ( severity )
@@ -138,7 +138,7 @@ import Data.MoreUnicode.Either       ( pattern 𝕷, pattern 𝕽 )
 import Data.MoreUnicode.Functor      ( (⩺), (⊳) )
 import Data.MoreUnicode.Lens         ( (⊣) )
 import Data.MoreUnicode.Maybe        ( 𝕄, pattern 𝕵, pattern 𝕹 )
-import Data.MoreUnicode.Monad        ( (≫) )
+import Data.MoreUnicode.Monad        ( (⪼), (≫) )
 import Data.MoreUnicode.Monoid       ( ю )
 import Data.MoreUnicode.String       ( 𝕊 )
 import Data.MoreUnicode.Text         ( 𝕋 )
@@ -211,7 +211,7 @@ drOpts o = (o ⊣ dryRunLevel, o ⊣ options)
      from arguments).  A parser is used to parse those arguments from input. -}
 stdMain_ ∷ ∀ ε ρ σ ω ν μ .
            (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-            HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω,
+            HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω, Default ω,
             HasCallStack) ⇒
            Natty ν                         -- ^ maximum `DryRun` level
          → 𝕋                               -- ^ program synopsis
@@ -220,6 +220,8 @@ stdMain_ ∷ ∀ ε ρ σ ω ν μ .
          → [𝕊]                             -- ^ args to parse (e.g., cmdline)
          → μ ()
 stdMain_ n desc p io args = do
+  let io' = \ o → logIOT Debug ([fmt|cmdline args: %L|] args) ⪼ io o
+
   let optionDesc ∷ 𝕊 → [𝕊] → Doc
       optionDesc name descn =
         let para = fillSep $ text ⊳ (words $ unwords descn)
@@ -304,7 +306,8 @@ stdMain_ n desc p io args = do
                   𝕷 e     → throwError e
                   𝕽 (𝕵 e) → throwUsage $ "bad log file: " ⊕ e
                   𝕽 𝕹     → withFile UTF8 (FileW $ 𝕵 0640)
-                                          (unLogFile logfn) (logIOToFile io o ∘ view handle)
+                                          (unLogFile logfn)
+                                          (logIOToFile io' o ∘ view handle)
 
 ----------------------------------------
 

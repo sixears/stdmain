@@ -1,3 +1,7 @@
+1.5.6.2 2022-01-21
+==================
+- add raw cmdline args debug output in stdMain_
+
 1.5.6.1 2021-12-03
 ==================
 - correct polarity of checkInputFile
