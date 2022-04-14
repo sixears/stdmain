@@ -20,7 +20,7 @@ import Data.Function.Unicode  ( (∘) )
 
 import Data.Textual  ( Printable, toText )
 
--- default -----------------------------
+-- data-default ------------------------
 
 import Data.Default  ( Default )
 

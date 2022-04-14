@@ -1,3 +1,7 @@
+1.5.7.0 2022-04-14
+==================
+- upgrade dependencies, particularly mockio-plus to 0.3.6.0
+
 1.5.6.2 2022-01-21
 ==================
 - add raw cmdline args debug output in stdMain_

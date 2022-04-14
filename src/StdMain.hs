@@ -10,42 +10,20 @@ module StdMain
   )
 where
 
+import Base1  hiding  ( (∈) )
+
 -- base --------------------------------
 
-import Control.Applicative  ( pure )
-import Control.Exception    ( Exception )
-import Control.Monad        ( foldM, forM, forM_, mapM, return, when )
-import Data.Bifunctor       ( first )
 import Data.Bool            ( bool )
-import Data.Eq              ( Eq )
 import Data.Foldable        ( Foldable )
-import Data.Function        ( ($) )
+import Data.Function        ( flip )
 import Data.Maybe           ( catMaybes )
-import Data.Ord             ( (<) )
 import Data.String          ( unwords, words )
-import Data.Tuple           ( fst, uncurry )
-import System.IO            ( IO )
-import Text.Show            ( Show( show ) )
-
--- base-unicode-symbols ----------------
-
-import Data.Eq.Unicode        ( (≡), (≢) )
-import Data.Function.Unicode  ( (∘) )
-import Data.Monoid.Unicode    ( (⊕) )
-import Data.Ord.Unicode       ( (≤) )
-import GHC.Stack              ( HasCallStack )
+import Data.Tuple           ( uncurry )
 
 -- containers-plus ---------------------
 
 import ContainersPlus.Member  ( HasMember( (∈) ) )
-
--- data-default ------------------------
-
-import Data.Default  ( Default( def ) )
-
--- data-textual ------------------------
-
-import Data.Textual  ( Printable, toString, toText )
 
 -- exited ------------------------------
 
@@ -60,10 +38,6 @@ import FPath.AsFilePath        ( AsFilePath )
 import FPath.File              ( FileAs )
 import FPath.Dirname           ( dirname )
 import FPath.Error.FPathError  ( AsFPathError )
-
--- has-callstack -----------------------
-
-import HasCallstack  ( HasCallstack )
 
 -- lens --------------------------------
 
@@ -93,59 +67,35 @@ import MockIO.RenderDoMock  ( renderWithDoMock )
 
 -- mockio-plus -------------------------
 
-import MockIO.Directory  ( mkdir )
-import MockIO.File       ( AccessMode( ACCESS_W, ACCESS_WX )
-                         , FExists( FExists, NoFExists )
-                         , access, fexists, fexists', lfexists, lfexists', stat
-                         )
-import MockIO.Process    ( (!) )
-import MockIO.Process.MLCmdSpec
-                         ( MLCmdSpec )
-
--- monaderror-io -----------------------
-
-import MonadError           ( ѥ )
-import MonadError.IO.Error  ( AsIOError )
+import MockIO.Directory              ( mkdir )
+import MockIO.File                   ( AccessMode( ACCESS_W, ACCESS_WX )
+                                     , FExists( FExists, NoFExists )
+                                     , access, fexists, fexists', lfexists
+                                     , lfexists', stat
+                                     )
+import MockIO.Process                ( ꙩ )
+import MockIO.Process.MLCmdSpec      ( MLCmdSpec )
+import MockIO.Process.OutputDefault  ( OutputDefault )
 
 -- monadio-plus ------------------------
 
-import MonadIO       ( MonadIO, liftIO )
-import MonadIO.Base  ( getArgs )
-import MonadIO.Error.CreateProcError
-                     ( AsCreateProcError )
-import MonadIO.Error.ProcExitError
-                     ( AsProcExitError )
-import MonadIO.File  ( FileOpenMode( FileW ), FileType( Directory )
-                     , HEncoding( UTF8 )
-                     , devnull, fileWritable, ftype, withFile
-                     )
-import MonadIO.NamedHandle
-                     ( handle )
-import MonadIO.Process.ExitStatus
-                     ( ExitStatus )
-import MonadIO.Process.OutputHandles
-                     ( OutputHandles )
-import MonadIO.Process.MakeProc
-                     ( MakeProc )
-import MonadIO.Process.ToMaybeTexts
-                     ( ToMaybeTexts )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode.Applicative  ( (⊴) )
-import Data.MoreUnicode.Bool         ( pattern 𝕿, pattern 𝕱 )
-import Data.MoreUnicode.Either       ( pattern 𝕷, pattern 𝕽 )
-import Data.MoreUnicode.Functor      ( (⩺), (⊳) )
-import Data.MoreUnicode.Lens         ( (⊣) )
-import Data.MoreUnicode.Maybe        ( 𝕄, pattern 𝕵, pattern 𝕹 )
-import Data.MoreUnicode.Monad        ( (⪼), (≫) )
-import Data.MoreUnicode.Monoid       ( ю )
-import Data.MoreUnicode.String       ( 𝕊 )
-import Data.MoreUnicode.Text         ( 𝕋 )
+import MonadIO.Base                   ( getArgs )
+import MonadIO.Error.CreateProcError  ( AsCreateProcError )
+import MonadIO.Error.ProcExitError    ( AsProcExitError )
+import MonadIO.File                   ( FileOpenMode( FileW )
+                                      , FileType( Directory )
+                                      , HEncoding( UTF8 )
+                                      , fileWritable, ftype, withFile
+                                      )
+import MonadIO.NamedHandle            ( handle )
+import MonadIO.Process.ExitStatus     ( ExitStatus, HasExitStatus( exitVal ) )
+import MonadIO.Process.OutputHandles  ( OutputHandles )
+import MonadIO.Process.MakeProc       ( MakeProc )
+import MonadIO.Process.ToMaybeTexts   ( ToMaybeTexts )
 
 -- mtl ---------------------------------
 
-import Control.Monad.Except  ( ExceptT, MonadError, throwError )
+import Control.Monad.Reader  ( runReaderT )
 
 -- natural-plus ------------------------
 
@@ -167,11 +117,7 @@ import OptParsePlus  ( parseOpts_ )
 
 -- prettyprinter -----------------------
 
-import qualified Data.Text.Prettyprint.Doc  as  PPDoc
-
--- tfmt --------------------------------
-
-import Text.Fmt  ( fmt, fmtT )
+import qualified Prettyprinter  as  PPDoc
 
 ------------------------------------------------------------
 --                     local imports                      --
@@ -571,16 +517,17 @@ checkOutputFiles fns make_dirs overwrite = do
 ----------------------------------------
 
 {- | Run a list of external processes that take nothing on stdin. -}
-runNICmds ∷ ∀ ε ζ ξ μ .
-            (MonadIO μ,
+runNICmds ∷ ∀ ε ξ ζ μ .
+            (MonadIO μ, HasCallStack,
              AsProcExitError ε, AsFPathError ε, AsCreateProcError ε,
              AsIOError ε, Printable ε, MonadError ε μ,
-             HasCallStack, ToMaybeTexts ξ, OutputHandles ζ ξ, MakeProc ζ,
+             ToMaybeTexts ξ, OutputDefault ξ, OutputHandles ζ ξ, MakeProc ζ,
              MonadLog (Log MockIOClass) μ) ⇒
             [DoMock → MLCmdSpec ξ] → DoMock → μ [(ExitStatus,ξ)]
 
 runNICmds cmds do_mock =
-  forM cmds (\ cmd → devnull ≫ \ null → null ! (cmd do_mock))
+  flip runReaderT do_mock $
+    (fmap (first $ view exitVal)) ⊳ forM cmds (\ cmd → ꙩ (cmd do_mock))
 
 ----------------------------------------
 
@@ -589,10 +536,10 @@ runNICmds cmds do_mock =
      Non-extant elements of `make_dirs` will be created (mode 0755).
  -}
 checkRunNICmds ∷ ∀ ε ζ ξ μ .
-                 (MonadIO μ,
+                 (MonadIO μ, HasCallStack,
                   AsProcExitError ε, AsFPathError ε, AsCreateProcError ε,
                   AsUsageError ε, AsIOError ε, Printable ε, MonadError ε μ,
-                  HasCallStack, ToMaybeTexts ξ, OutputHandles ζ ξ, MakeProc ζ,
+                  ToMaybeTexts ξ, OutputDefault ξ, OutputHandles ζ ξ,MakeProc ζ,
                   MonadLog (Log MockIOClass) μ) ⇒
                  Overwrite → [DoMock → MLCmdSpec ξ] → [AbsFile] → [AbsDir]
                → DoMock → μ [(ExitStatus,ξ)]
@@ -609,10 +556,10 @@ checkRunNICmds overwrite cmds output_files make_dirs do_mock = do
 
 {- | Like `checkRunNICmds`, but all output & exit statuses are discarded. -}
 checkRunNICmds' ∷ ∀ ε ζ ξ μ .
-                 (MonadIO μ,
+                 (MonadIO μ, HasCallStack,
                   AsProcExitError ε, AsFPathError ε, AsCreateProcError ε,
                   AsUsageError ε, AsIOError ε, Printable ε, MonadError ε μ,
-                  HasCallStack, ToMaybeTexts ξ, OutputHandles ζ ξ, MakeProc ζ,
+                  ToMaybeTexts ξ, OutputDefault ξ, OutputHandles ζ ξ,MakeProc ζ,
                   MonadLog (Log MockIOClass) μ) ⇒
                  Overwrite → [DoMock → MLCmdSpec ξ] → [AbsFile] → [AbsDir]
                → DoMock → μ ()
