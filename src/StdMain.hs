@@ -10,7 +10,7 @@ module StdMain
   )
 where
 
-import Base1  hiding  ( (∈) )
+import Base1T  hiding  ( (∈) )
 
 -- base --------------------------------
 

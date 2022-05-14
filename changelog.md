@@ -1,3 +1,7 @@
+1.5.8.0 2022-05-14
+==================
+- add StdMain.ProcOutputParseError
+
 1.5.7.0 2022-04-14
 ==================
 - upgrade dependencies, particularly mockio-plus to 0.3.6.0
