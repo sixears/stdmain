@@ -3,7 +3,7 @@
 
 module StdMain.ProcOutputParseError
   ( AsProcOutputParseError(..), ProcOPError, ProcOutputParseError
-  , UsageParseFPProcIOError
+  , UsageParseFPProcIOOPError
   , asProcOutputParseError, throwAsProcOutputParseError
   )
 where

@@ -1,3 +1,7 @@
+1.5.10.0 2022-05-14
+==================
+- fix export from UsageParseFPProcIOError to UsageParseFPProcIOOPError
+
 1.5.9.0 2022-05-14
 ==================
 - export UsageParseFPProcIOError from ProcOutputParseError
