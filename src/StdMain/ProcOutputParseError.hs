@@ -3,7 +3,9 @@
 
 module StdMain.ProcOutputParseError
   ( AsProcOutputParseError(..), ProcOPError, ProcOutputParseError
-  , asProcOutputParseError, throwAsProcOutputParseError )
+  , UsageParseFPProcIOError
+  , asProcOutputParseError, throwAsProcOutputParseError
+  )
 where
 
 import Base1T

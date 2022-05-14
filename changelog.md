@@ -1,3 +1,7 @@
+1.5.9.0 2022-05-14
+==================
+- export UsageParseFPProcIOError from ProcOutputParseError
+
 1.5.8.0 2022-05-14
 ==================
 - add StdMain.ProcOutputParseError
