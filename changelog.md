@@ -1,3 +1,7 @@
+1.5.10.1 2022-05-24
+===================
+- upgrade mockio-plus to 0.3.10.0
+
 1.5.10.0 2022-05-14
 ==================
 - fix export from UsageParseFPProcIOError to UsageParseFPProcIOOPError

@@ -70,9 +70,9 @@ import MockIO.RenderDoMock  ( renderWithDoMock )
 import MockIO.Directory              ( mkdir )
 import MockIO.File                   ( AccessMode( ACCESS_W, ACCESS_WX )
                                      , FExists( FExists, NoFExists )
-                                     , access, fexists, fexists', lfexists
-                                     , lfexists', stat
+                                     , fexists, fexists', lfexists, lfexists'
                                      )
+import MockIO.FStat                  ( access, stat )
 import MockIO.Process                ( ꙩ )
 import MockIO.Process.MLCmdSpec      ( MLCmdSpec )
 import MockIO.Process.OutputDefault  ( OutputDefault )

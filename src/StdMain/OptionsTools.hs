@@ -52,7 +52,7 @@ import MockIO.IOClass  ( HasIOClass )
 
 -- monadio-plus ------------------------
 
-import MockIO.File    ( stat )
+import MockIO.FStat    ( stat )
 import MonadIO.FPath  ( PResolvable, pResolve )
 
 -- monaderror-io -----------------------
