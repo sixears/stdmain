@@ -1,3 +1,7 @@
+1.5.11.0 2022-06-05
+==================
+- add TextError, ScriptError, and eCatchProcOPE
+
 1.5.10.1 2022-05-24
 ===================
 - upgrade mockio-plus to 0.3.10.0

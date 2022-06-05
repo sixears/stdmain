@@ -2,9 +2,11 @@
 {-# LANGUAGE DerivingStrategies #-}
 
 module StdMain.ProcOutputParseError
-  ( AsProcOutputParseError(..), ProcOPError, ProcOutputParseError
+  ( AsProcOutputParseError(..), AsTextError(..)
+  , ProcOPError, ProcOutputParseError, ScriptError, TextError
   , UsageParseFPProcIOOPError
-  , asProcOutputParseError, throwAsProcOutputParseError
+  , asProcOutputParseError, asTextError, eCatchProcOPE
+  , throwAsProcOutputParseError, throwAsTextError, ҩ
   )
 where
 
@@ -21,6 +23,10 @@ import Control.DeepSeq  ( NFData )
 -- fpath -------------------------------
 
 import FPath.Error.FPathError  ( AsFPathError( _FPathError ) )
+
+-- monaderror-io -----------------------
+
+import MonadError  ( eitherME )
 
 -- monadio-plus ------------------------
 
@@ -76,7 +82,8 @@ asProcOutputParseError ∷ (AsProcOutputParseError ε, HasCallStack, Printable �
 asProcOutputParseError t =
   _ProcOutputParseError # ProcOutputParseError (toText t,callStack)
 
-throwAsProcOutputParseError ∷ (AsProcOutputParseError ε, MonadError ε η,
+throwAsProcOutputParseError ∷ ∀ ε ρ α η .
+                              (AsProcOutputParseError ε, MonadError ε η,
                                HasCallStack, Printable ρ) ⇒
                               ρ → η α
 throwAsProcOutputParseError t =
@@ -129,6 +136,15 @@ instance Printable ProcOPError where
 instance AsProcOutputParseError ProcOPError where
   _ProcOutputParseError = _POPE_OUTPUT_PARSE_ERROR
 
+----------------------------------------
+
+{-| Catch an `Either`, e.g., a MonadThrow or similar, and turn it into a
+    `MonadError` of `ProcOutputParseError`.  -}
+eCatchProcOPE ∷ ∀ ε ε' α η .
+                (MonadError ε η,HasCallStack,AsProcOutputParseError ε,Show ε') ⇒
+                𝔼 ε' α → η α
+eCatchProcOPE = eitherME (asProcOutputParseError ∘ show)
+
 ------------------------------------------------------------
 
 {- | A concrete main error, possibly including `ProcOutputParseError` -}
@@ -180,5 +196,100 @@ instance AsProcOutputParseError UsageParseFPProcIOOPError where
 
 instance AsUsageError UsageParseFPProcIOOPError where
   _UsageError  = _UPFPIOP_USAGE_ETC_ERROR ∘ _UsageError
+
+------------------------------------------------------------
+
+{- | General-purpose text error -}
+newtype TextError = TextError (𝕋, CallStack)
+  deriving Generic
+  deriving anyclass NFData
+
+instance Exception TextError
+
+instance Show TextError where
+  show (TextError (t,_)) = show t
+
+instance Eq TextError where
+  TextError (t,_) == TextError (t',_) = t == t'
+
+instance HasCallstack TextError where
+  callstack = lens (\ (TextError (_,cs)) → cs)
+                   (\ (TextError (t,_)) cs →
+                       TextError (t,cs))
+
+instance Printable TextError where
+  print (TextError (t,_)) = P.text $ "TextError: " ⊕ t
+
+------------------------------------------------------------
+
+{- | An error that might be of type `ProcOutputParseError` -}
+class AsTextError ε where
+  _TextError ∷ Prism' ε TextError
+
+instance AsTextError TextError where
+  _TextError = id
+
+asTextError ∷ (AsTextError ε, HasCallStack, Printable ρ) ⇒ ρ → ε
+asTextError t = _TextError # TextError (toText t,callStack)
+
+throwAsTextError  ∷ ∀ ε α η . (AsTextError ε, MonadError ε η, HasCallStack)⇒
+                    𝕋 → η α
+throwAsTextError t = throwError $ _TextError # TextError (t,callStack)
+
+ҩ :: ∀ ε α η . (AsTextError ε, MonadError ε η, HasCallStack) ⇒ 𝕋 -> η α
+ҩ = throwAsTextError
+
+------------------------------------------------------------
+
+{-| Generic error for scripts, intended to encompass all other general-purpose
+    script error types (so may be upgraded in future to include more things.
+ -}
+data ScriptError = UPFPPIOOP_ERROR UsageParseFPProcIOOPError
+                 | B_ERROR         TextError
+  deriving (Eq,Generic,Show)
+
+_UPFPPIOOP_ERROR ∷ Prism' ScriptError UsageParseFPProcIOOPError
+_UPFPPIOOP_ERROR =
+  prism' (\ e → UPFPPIOOP_ERROR e) (\ case UPFPPIOOP_ERROR e → 𝕵 e; _ → 𝕹)
+
+_B_ERROR ∷ Prism' ScriptError TextError
+_B_ERROR = prism' (\ e → B_ERROR e) (\ case B_ERROR e → 𝕵 e; _ →𝕹)
+
+instance Exception ScriptError
+
+instance HasCallstack ScriptError where
+  callstack =
+    lens (\ case (UPFPPIOOP_ERROR popepe) → popepe  ⊣ callstack
+                 (B_ERROR popeope)        → popeope ⊣ callstack)
+         (\ pe cs → case pe of
+                      (UPFPPIOOP_ERROR popepe) →
+                        UPFPPIOOP_ERROR $ popepe & callstack ⊢ cs
+                      (B_ERROR popeope) → B_ERROR $ popeope & callstack ⊢ cs
+         )
+
+instance AsCreateProcError ScriptError where
+ _CreateProcError = _UPFPPIOOP_ERROR ∘ _CreateProcError
+
+instance AsIOError ScriptError where
+  _IOError = _UPFPPIOOP_ERROR ∘ _IOError
+
+instance AsFPathError ScriptError where
+  _FPathError = _UPFPPIOOP_ERROR ∘ _FPathError
+
+instance AsProcExitError ScriptError where
+  _ProcExitError = _UPFPPIOOP_ERROR ∘ _ProcExitError
+
+instance Printable ScriptError where
+  print (UPFPPIOOP_ERROR pexe   ) = print pexe
+  print (B_ERROR         popeope)  = print popeope
+
+instance AsProcOutputParseError ScriptError where
+  _ProcOutputParseError = _UPFPPIOOP_ERROR ∘ _ProcOutputParseError
+
+instance AsUsageError ScriptError where
+  _UsageError  = _UPFPPIOOP_ERROR ∘ _UsageError
+
+instance AsTextError ScriptError where
+  _TextError = _B_ERROR
 
 -- that's all, folks! ----------------------------------------------------------
