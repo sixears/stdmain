@@ -1,3 +1,7 @@
+1.5.12.0 2022-06-07
+==================
+- add jsonParse
+
 1.5.11.0 2022-06-05
 ==================
 - add TextError, ScriptError, and eCatchProcOPE

@@ -3,7 +3,7 @@ module StdMain
   , lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
   , checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkInputFile
   , checkInputFiles, checkMkdirs, checkOutputFiles, checkRunNICmds
-  , checkRunNICmds', runNICmds, throwUsageErrors
+  , checkRunNICmds', jsonParse, runNICmds, throwUsageErrors
 
   -- DEPRECATED
   , stdMainNoDR', stdMain''
@@ -11,6 +11,10 @@ module StdMain
 where
 
 import Base1T  hiding  ( (∈) )
+
+-- aeson -------------------------------
+
+import Data.Aeson  ( FromJSON, eitherDecode' )
 
 -- base --------------------------------
 
@@ -20,6 +24,10 @@ import Data.Function        ( flip )
 import Data.Maybe           ( catMaybes )
 import Data.String          ( unwords, words )
 import Data.Tuple           ( uncurry )
+
+-- bytestring --------------------------
+
+import qualified  Data.ByteString.Lazy  as  Lazy
 
 -- containers-plus ---------------------
 
@@ -119,6 +127,10 @@ import OptParsePlus  ( parseOpts_ )
 
 import qualified Prettyprinter  as  PPDoc
 
+-- text --------------------------------
+
+import Data.Text  ( pack )
+
 ------------------------------------------------------------
 --                     local imports                      --
 ------------------------------------------------------------
@@ -128,6 +140,9 @@ import StdMain.StdOptions      ( DryRunLevel, HasDryRunLevel( dryRunLevel )
                                , callstackOnError, dryRunNum, options
                                , parseStdOptions, profCallstackOnError
                                )
+import StdMain.ProcOutputParseError
+                               ( AsProcOutputParseError
+                               , throwAsProcOutputParseError )
 import StdMain.UsageError      ( AsUsageError, UsageFPProcIOError, throwUsage )
 import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
                                , csopt, ioClassFilter, logFile, showIOCs
@@ -566,5 +581,12 @@ checkRunNICmds' ∷ ∀ ε ζ ξ μ .
 checkRunNICmds' overwrite cmds output_files make_dirs do_mock = do
   _  ← checkRunNICmds overwrite cmds output_files make_dirs do_mock
   return ()
+
+----------------------------------------
+
+jsonParse ∷ ∀ ε α η . (AsProcOutputParseError ε, MonadError ε η, FromJSON α) ⇒
+            Lazy.ByteString → η α
+jsonParse bs =
+  either (throwAsProcOutputParseError ∘ pack) return $ eitherDecode' bs
 
 -- that's all, folks! ----------------------------------------------------------
