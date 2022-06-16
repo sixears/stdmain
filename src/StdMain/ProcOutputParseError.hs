@@ -6,7 +6,7 @@ module StdMain.ProcOutputParseError
   , ProcOPError, ProcOutputParseError, ScriptError, TextError
   , UsageParseFPProcIOOPError
   , asProcOutputParseError, asTextError, eCatchProcOPE
-  , throwAsProcOutputParseError, throwAsTextError, ҩ
+  , throwAsProcOutputParseError, throwAsTextError, throwToTextError, ҩ, ҩҩ
   )
 where
 
@@ -229,15 +229,36 @@ class AsTextError ε where
 instance AsTextError TextError where
   _TextError = id
 
+----------------------------------------
+
 asTextError ∷ (AsTextError ε, HasCallStack, Printable ρ) ⇒ ρ → ε
 asTextError t = _TextError # TextError (toText t,callStack)
+
+--------------------
 
 throwAsTextError  ∷ ∀ ε α η . (AsTextError ε, MonadError ε η, HasCallStack)⇒
                     𝕋 → η α
 throwAsTextError t = throwError $ _TextError # TextError (t,callStack)
 
+----------
+
 ҩ :: ∀ ε α η . (AsTextError ε, MonadError ε η, HasCallStack) ⇒ 𝕋 -> η α
 ҩ = throwAsTextError
+
+----------------------------------------
+
+{-| Convert some printable error to a `TextError`, probably for throwing into
+    a `ScriptError`. -}
+throwToTextError ∷ ∀ ε β α η . (AsTextError ε, Printable α, MonadError ε η) ⇒
+              𝔼 α β → η β
+throwToTextError x = case x of
+                       𝕷 e → throwAsTextError (toText e)
+                       𝕽 r → return r
+
+----------
+
+ҩҩ ∷ ∀ ε β α η . (AsTextError ε, Printable α, MonadError ε η) ⇒ 𝔼 α β → η β
+ҩҩ = throwToTextError
 
 ------------------------------------------------------------
 
