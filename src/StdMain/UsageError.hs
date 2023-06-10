@@ -1,8 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+{-| @UsageError@ and many combined errors -}
+
 module StdMain.UsageError
   ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError
+  , UsageFPathError
   , UsageFPProcIOError, UsageIOError, UsageParseFPProcIOError
+  , UsageFPIOTPError
   , readUsage, throwUsage, usageError
   )
 where
@@ -78,12 +82,18 @@ import Data.Text  ( Text )
 
 import qualified  Text.Printer  as  P
 
+-- textual-plus ------------------------
+
+import TextualPlus.Error.TextualParseError
+               ( AsTextualParseError( _TextualParseError ), TextualParseError )
+
 -- tfmt --------------------------------
 
 import Text.Fmt  ( fmtT )
 
 --------------------------------------------------------------------------------
 
+{-| an error in cmdline calling args & options -}
 data UsageError = UsageError { _txt ∷ Text, _callstack ∷ CallStack }
   deriving (Generic,NFData,Show)
 
@@ -103,6 +113,7 @@ instance HasCallstack UsageError where
 
 ----------------------------------------
 
+{-| prisms including @UsageError -}
 class AsUsageError ε where
   _UsageError ∷ Prism' ε UsageError
 
@@ -118,16 +129,20 @@ instance Printable UsageError where
 
 ------------------------------------------------------------
 
+{-| create an @AsUsageError@ from a @ToText@ -}
 usageError ∷ ∀ τ ε . (AsUsageError ε, Printable τ, HasCallStack) ⇒ τ → ε
 usageError t = _UsageError # UsageError (toText t) callStack
 
 ----------------------------------------
 
+{-| throw an @AsUsageError@, given a @ToText@ -}
 throwUsage ∷ ∀ τ ε ω η . (Printable τ, AsUsageError ε, MonadError ε η) ⇒ τ → η ω
 throwUsage t = throwError $ usageError t
 
 ----------------------------------------
 
+{-| try to @readMaybe@ a @Printable@ to a @Read@ value; on failure, throw an
+    @AsUsageError@ -}
 readUsage ∷ ∀ τ ε ω η . (AsUsageError ε, MonadError ε η, Read ω, Printable τ) ⇒
             τ → η ω
 readUsage s = let errMsg = [fmtT|failed to parse: '%T'|] s
@@ -135,6 +150,7 @@ readUsage s = let errMsg = [fmtT|failed to parse: '%T'|] s
 
 ------------------------------------------------------------
 
+{-| combined @UsageError@ & @IOError@ -}
 data UsageIOError = UIOE_USAGE_ERROR UsageError
                   | UIOE_IO_ERROR    IOError
   deriving (Generic,NFData)
@@ -187,6 +203,7 @@ instance HasCallstack UsageIOError where
 
 ------------------------------------------------------------
 
+{-| combined @UsageError@ & @FPathError@ -}
 data UsageFPathError = UFPE_USAGE_ERROR UsageError
                      | UFPE_FPATH_ERROR FPathError
   deriving (Eq,Generic,NFData)
@@ -239,6 +256,7 @@ instance HasCallstack UsageFPathError where
 
 ------------------------------------------------------------
 
+{-| combined @UsageError@, @IOError@ & @FPathError@ -}
 data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
                        | UFPIOE_FPATHIO_ERROR FPathIOError
   deriving (Eq,Generic,NFData)
@@ -298,7 +316,8 @@ instance HasCallstack UsageFPathIOError where
 
 ------------------------------------------------------------
 
-{- | An Error for Usage, FPath, CreateProc, ProcExit, and IO Errors. -}
+{-| combined @UsageError@, @FPathError@, @IOError@, @CreateProcError@,
+    @ProcExitError@ -}
 data UsageFPProcIOError = UFPPIOE_UFPIO_ERROR UsageFPathIOError
                         | UFPPIOE_CPROC_ERROR CreateProcError
                         | UFPPIOE_PEXIT_ERROR ProcExitError
@@ -381,8 +400,8 @@ instance HasCallstack UsageFPProcIOError where
 
 ------------------------------------------------------------
 
-{- | An Error for Usage, Parse, FPath, CreateProc, ProcExit, and IO Errors. -}
-
+{-| combined @UsageError@, @FPathError@, @IOError@, @CreateProcError@,
+    @ProcExitError@, @ParseError@ -}
 data UsageParseFPProcIOError = UPFPPIOE_USAGE_ETC_ERROR UsageFPProcIOError
                              | UPFPPIOE_PARSE_ERROR     ParseError
   deriving (Eq,Show)
@@ -433,5 +452,69 @@ instance AsProcExitError UsageParseFPProcIOError where
 instance AsUsageError UsageParseFPProcIOError where
   _UsageError  = _UPFPPIOE_USAGE_ETC_ERROR ∘ _UsageError
 
+------------------------------------------------------------
+
+{-| combined @UsageError@, @FPathError@, @IOError@, @TextualParseError@ -}
+data UsageFPIOTPError = UFPIOTPE_USAGE_FPATH_IO_ERROR  UsageFPathIOError
+                      | UFPIOTPE_TPARSE_ERROR          TextualParseError
+  deriving (Eq,Generic,NFData)
+
+_UFPIOTPE_USAGE_FPATH_IO_ERROR ∷ Prism' UsageFPIOTPError UsageFPathIOError
+_UFPIOTPE_USAGE_FPATH_IO_ERROR = prism' (\ e → UFPIOTPE_USAGE_FPATH_IO_ERROR e)
+                        (\ case UFPIOTPE_USAGE_FPATH_IO_ERROR e → 𝕵 e; _ → 𝕹)
+
+_UFPIOTPE_TPARSE_ERROR ∷ Prism' UsageFPIOTPError TextualParseError
+_UFPIOTPE_TPARSE_ERROR = prism' (\ e → UFPIOTPE_TPARSE_ERROR e)
+                             (\ case UFPIOTPE_TPARSE_ERROR e → 𝕵 e; _ → 𝕹)
+
+--------------------
+
+instance Exception UsageFPIOTPError
+
+--------------------
+
+instance Show UsageFPIOTPError where
+  show (UFPIOTPE_TPARSE_ERROR e) = show e
+  show (UFPIOTPE_USAGE_FPATH_IO_ERROR    e) = show e
+
+--------------------
+
+instance AsUsageError UsageFPIOTPError where
+  _UsageError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _UsageError
+
+--------------------
+
+instance AsTextualParseError UsageFPIOTPError where
+  _TextualParseError = _UFPIOTPE_TPARSE_ERROR
+
+--------------------
+
+instance AsFPathError UsageFPIOTPError where
+  _FPathError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _FPathError
+
+--------------------
+
+instance AsIOError UsageFPIOTPError where
+  _IOError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _IOError
+
+--------------------
+
+instance Printable UsageFPIOTPError where
+  print (UFPIOTPE_TPARSE_ERROR   e) = print e
+  print (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = print e
+
+--------------------
+
+instance HasCallstack UsageFPIOTPError where
+  callstack =
+    let
+      getter (UFPIOTPE_TPARSE_ERROR   e) = e ⊣ callstack
+      getter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = e ⊣ callstack
+      setter (UFPIOTPE_TPARSE_ERROR   e) cs =
+        UFPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
+      setter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) cs =
+        UFPIOTPE_USAGE_FPATH_IO_ERROR (e & callstack ⊢ cs)
+    in
+      lens getter setter
 
 -- that's all, folks! ----------------------------------------------------------
