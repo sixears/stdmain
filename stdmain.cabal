@@ -10,7 +10,7 @@ name:                stdmain
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             1.5.14.0
+version:             1.6.0.0
 
 -- A short (one-line) description of the package.
 synopsis:            standardized CLI wrapper
@@ -123,5 +123,22 @@ test-suite stdmain-test
   main-is:            stdmain-test.hs
   build-depends:      base, stdmain, tasty
   default-language:   Haskell2010
+
+-------------------------------------------------------------------------------
+
+-- This needs to be disabled to allow the build to pass
+--
+-- test-suite mock-head
+--   default-extensions: FlexibleContexts, NoImplicitPrelude, OverloadedStrings
+--   ghc-options:        -O2 -W -Wall -fhelpful-errors
+--   type:               exitcode-stdio-1.0
+--   hs-source-dirs:     t
+--   main-is:            mock-head.hs
+--   build-depends:      base, logging-effect
+--                     , optparse-applicative, tasty, text
+--
+--                     , base1t, fpath, log-plus, mockio, mockio-log
+--                     , stdmain
+--   default-language:   Haskell2010
 
 -------------------------------------------------------------------------------

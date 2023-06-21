@@ -4,25 +4,15 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE UnicodeSyntax     #-}
 
+import Base1T
+
 -- base --------------------------------
 
 import qualified  System.IO
 
 import Control.Applicative     ( optional )
-import Control.Monad.IO.Class  ( MonadIO, liftIO )
-import Data.Function           ( ($) )
 import Data.List               ( take )
-import Data.Maybe              ( Maybe( Just, Nothing ), maybe )
-import System.IO               ( Handle, IO, IOMode( WriteMode ), stdout )
-import Text.Show               ( Show )
-
--- base-unicode-symbols ----------------
-
-import Data.Function.Unicode  ( (∘) )
-
--- data-textual ------------------------
-
-import Data.Textual  ( toString, toText )
+import System.IO               ( Handle, IOMode( WriteMode ), stdout )
 
 -- fpath -------------------------------
 
@@ -36,16 +26,6 @@ import Log  ( Log )
 -- logging-effect ----------------------
 
 import Control.Monad.Log  ( MonadLog, Severity( Informational, Notice ) )
-
--- mtl ---------------------------------
-
-import Control.Monad.Except  ( MonadError )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode.Applicative  ( (⊵) )
-import Data.MoreUnicode.Functor      ( (⊳) )
-import Data.MoreUnicode.Monoid       ( ю )
 
 -- optparse-applicative ----------------
 
@@ -63,10 +43,6 @@ import qualified  Data.Text.IO
 
 import Data.Text     ( Text, lines, unlines, unpack )
 import Data.Text.IO  ( hPutStr )
-
--- tfmt --------------------------------
-
-import Text.Fmt  ( fmtT )
 
 ------------------------------------------------------------
 --                     local imports                      --
@@ -101,7 +77,7 @@ main = -- XXX Tidy This Up
        -- add Logging to withFile
        -- cmd logging using showcmdforuser
 
-       stdMainSimple "simple 'head' re-implementation to test MockIO"
+       stdMainSimple ("simple 'head' re-implementation to test MockIO" ∷ 𝕋)
                      parseOptions go
 
 go ∷ (MonadLog (Log MockIOClass) μ, MonadIO μ, MonadError ε μ, AsUsageError ε) ⇒

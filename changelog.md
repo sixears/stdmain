@@ -1,3 +1,7 @@
+1.6.0.0 2023-06-20
+==================
+- allow Doc for program descriptions
+
 1.5.14.0 2023-06-10
 ===================
 - +UsageFPIOTPError, export UsageFPathError

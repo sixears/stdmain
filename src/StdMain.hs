@@ -111,13 +111,11 @@ import Natural  ( Natty, One, none, one, count )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative  ( Parser, footerDoc, helper, progDesc )
-import Options.Applicative.Help.Pretty  ( Doc
-                                        , (<+>)
-                                        , align, empty, fillBreak, fillSep
-                                        , indent, string, text
-                                        , vcat
-                                        )
+import Options.Applicative  ( InfoMod, Parser
+                            , footerDoc, helper, progDesc, progDescDoc )
+import Options.Applicative.Help.Pretty
+                            ( Doc, (<+>), align, empty, fillBreak, fillSep
+                            , indent, string, text, vcat )
 
 -- optparse-plus -----------------------
 
@@ -129,7 +127,7 @@ import qualified Prettyprinter  as  PPDoc
 
 -- text --------------------------------
 
-import Data.Text  ( pack )
+import Data.Text  ( pack, unpack )
 
 ------------------------------------------------------------
 --                     local imports                      --
@@ -156,6 +154,21 @@ data Overwrite = Overwrite | NoOverwrite
 
 ------------------------------------------------------------
 
+{-| Can be turned into documentation for use as a program description. -}
+class ToProgDescDoc α where
+  toProgDescDoc ∷ α → InfoMod β
+
+instance ToProgDescDoc 𝕊 where
+  toProgDescDoc = progDesc
+
+instance ToProgDescDoc 𝕋 where
+  toProgDescDoc = progDesc ∘ unpack
+
+instance ToProgDescDoc Doc where
+  toProgDescDoc = progDescDoc ∘ 𝕵
+
+------------------------------------------------------------
+
 type LogTIO ω ε = LoggingT (Log ω) (ExceptT ε IO)
 -- type LogTIOM ε  = LoggingT (Log MockIOClass) (ExceptT ε IO)
 type LogTIOM ε  = LogTIO MockIOClass ε
@@ -166,20 +179,21 @@ type LogTIOM ε  = LogTIO MockIOClass ε
 drOpts ∷ StdOptions ν ρ → (DryRunLevel ν, ρ)
 drOpts o = (o ⊣ dryRunLevel, o ⊣ options)
 
-----------------------------------------
+------------------------------------------------------------
 
 {- | Execute some logging IO, which has access to a dry-run level (parsed
      from arguments).  A parser is used to parse those arguments from input. -}
-stdMain_ ∷ ∀ ε ρ σ ω ν μ .
+stdMain_ ∷ ∀ ε ρ τ σ ω ν μ .
            (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
             HasCallstack ε, ToExitCode σ, HasIOClass ω, HasDoMock ω, Default ω,
-            HasCallStack) ⇒
+            HasCallStack, ToProgDescDoc τ) ⇒
            Natty ν                         -- ^ maximum `DryRun` level
-         → 𝕋                               -- ^ program synopsis
+         → τ                               -- ^ program synopsis
          → Parser ρ                        -- ^ options parser
          → (StdOptions ν ρ → LogTIO ω ε σ) -- ^ program
          → [𝕊]                             -- ^ args to parse (e.g., cmdline)
          → μ ()
+
 stdMain_ n desc p io args = do
   let io' = \ o → logIOT Debug ([fmt|cmdline args: %L|] args) ⪼ io o
 
@@ -240,7 +254,9 @@ stdMain_ n desc p io args = do
                                                 ]
                            ]
                         )
-  o ← parseOpts_ args (progDesc (toString desc) ⊕ footerDoc (𝕵 footerDesc))
+  o ← parseOpts_ args (ю [ toProgDescDoc desc
+                         , footerDoc (𝕵 footerDesc)
+                         ])
                 (parseStdOptions n p ⊴ helper)
   let vopts      = o ⊣ verboseOptions
       ioClasses  = vopts ⊣ ioClassFilter
@@ -279,10 +295,10 @@ lvlToDoMock l = if 0 < dryRunNum l then DoMock else NoMock
      MockIOClass), `ν` fixed to `one` (i.e., a single dry-run level); and that
      dry-run level is translated to a `DoMock`.
  -}
-stdMain ∷ ∀ ε ρ σ μ .
+stdMain ∷ ∀ ε ρ σ τ μ .
           (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-           HasCallstack ε, ToExitCode σ) ⇒
-          𝕋                          -- ^ program description
+           HasCallstack ε, ToExitCode σ, ToProgDescDoc τ) ⇒
+          τ                          -- ^ program description
         → Parser ρ                   -- ^ options parser
         → (DoMock → ρ → LogTIOM ε σ) -- ^ main program
         → [𝕊]                        -- ^ arguments to parse
@@ -297,8 +313,8 @@ stdMain desc p io =
      there is a single dry-run level which is translated to DoMock/NoMock;
      intended for simple IO programs.
  -}
-stdMainSimple ∷ ∀ ρ σ μ . (MonadIO μ, ToExitCode σ) ⇒
-                𝕋
+stdMainSimple ∷ ∀ ρ σ τ μ . (MonadIO μ, ToExitCode σ, ToProgDescDoc τ) ⇒
+                τ
               → Parser ρ
               → (DoMock → ρ → (LogTIOM UsageFPProcIOError) σ)
               → μ ()
@@ -308,10 +324,10 @@ stdMainSimple desc parser io = getArgs ≫ stdMain desc parser io
 
 {- | Like `stdMain`, but with no `DryRun` option and `ω` fixed to
      `MockIOClass`. -}
-stdMainNoDR ∷ ∀ ε ρ σ μ .
+stdMainNoDR ∷ ∀ ε ρ σ τ μ .
               (MonadIO μ, Exception ε, Printable ε, AsUsageError ε, AsIOError ε,
-               HasCallstack ε, ToExitCode σ) ⇒
-              𝕋
+               HasCallstack ε, ToExitCode σ, ToProgDescDoc τ) ⇒
+              τ
             → Parser ρ
             → (ρ → LogTIOM ε σ)
             → [𝕊]
