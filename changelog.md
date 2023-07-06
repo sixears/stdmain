@@ -1,3 +1,7 @@
+1.6.1.0 2023-07-06
+==================
+- +UsageParseAesonFPPIOError
+
 1.6.0.0 2023-06-20
 ==================
 - allow Doc for program descriptions

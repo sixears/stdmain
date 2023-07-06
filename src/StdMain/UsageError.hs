@@ -3,13 +3,22 @@
 {-| @UsageError@ and many combined errors -}
 
 module StdMain.UsageError
-  ( AsUsageError( _UsageError ), UsageError, UsageFPathIOError
-  , UsageFPathError
-  , UsageFPProcIOError, UsageIOError, UsageParseFPProcIOError
+  ( AsUsageError( _UsageError )
+  , UsageError
   , UsageFPIOTPError
+  , UsageFPathError
+  , UsageFPathIOError
+  , UsageFPProcIOError
+  , UsageIOError
+  , UsageParseAesonFPPIOError
+  , UsageParseFPProcIOError
   , readUsage, throwUsage, usageError
   )
 where
+
+-- aeson-plus --------------------------
+
+import Data.Aeson.Error  ( AesonError, AsAesonError( _AesonError ) )
 
 -- base --------------------------------
 
@@ -404,7 +413,7 @@ instance HasCallstack UsageFPProcIOError where
     @ProcExitError@, @ParseError@ -}
 data UsageParseFPProcIOError = UPFPPIOE_USAGE_ETC_ERROR UsageFPProcIOError
                              | UPFPPIOE_PARSE_ERROR     ParseError
-  deriving (Eq,Show)
+  deriving (Eq,Generic,NFData,Show)
 
 _UPFPPIOE_USAGE_ETC_ERROR ∷ Prism' UsageParseFPProcIOError
                                    UsageFPProcIOError
@@ -514,6 +523,99 @@ instance HasCallstack UsageFPIOTPError where
         UFPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
       setter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) cs =
         UFPIOTPE_USAGE_FPATH_IO_ERROR (e & callstack ⊢ cs)
+    in
+      lens getter setter
+
+------------------------------------------------------------
+
+{-| combined @UsageError@, @FPathError@, @IOError@, @TextualParseError@ -}
+data UsageParseAesonFPPIOError =
+    UPAFPPIOE_USAGE_FP_PROC_IO_ERROR  UsageParseFPProcIOError
+  | UPAFPPIOE_AESON_ERROR             AesonError
+  | UPAFPPIOE_TPARSE_ERROR            TextualParseError
+  deriving (Eq,Generic{- ,NFData -})
+
+_UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∷ Prism' UsageParseAesonFPPIOError
+                                           UsageParseFPProcIOError
+_UPAFPPIOE_USAGE_FP_PROC_IO_ERROR =
+  prism' (\ e → UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e)
+         (\ case UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e → 𝕵 e; _ → 𝕹)
+
+_UPAFPPIOE_AESON_ERROR ∷ Prism' UsageParseAesonFPPIOError AesonError
+_UPAFPPIOE_AESON_ERROR = prism' (\ e → UPAFPPIOE_AESON_ERROR e)
+                                (\ case UPAFPPIOE_AESON_ERROR e → 𝕵 e; _ → 𝕹)
+
+_UPAFPPIOE_TPARSE_ERROR ∷ Prism' UsageParseAesonFPPIOError TextualParseError
+_UPAFPPIOE_TPARSE_ERROR = prism' (\ e → UPAFPPIOE_TPARSE_ERROR e)
+                                 (\ case UPAFPPIOE_TPARSE_ERROR e → 𝕵 e; _ → 𝕹)
+
+--------------------
+
+instance Exception UsageParseAesonFPPIOError
+
+--------------------
+
+instance Show UsageParseAesonFPPIOError where
+  show (UPAFPPIOE_AESON_ERROR            e) = show e
+  show (UPAFPPIOE_TPARSE_ERROR           e) = show e
+  show (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) = show e
+
+--------------------
+
+instance AsUsageError UsageParseAesonFPPIOError where
+  _UsageError = _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∘ _UsageError
+
+--------------------
+
+instance AsTextualParseError UsageParseAesonFPPIOError where
+  _TextualParseError = _UPAFPPIOE_TPARSE_ERROR
+
+--------------------
+
+instance AsAesonError UsageParseAesonFPPIOError where
+  _AesonError = _UPAFPPIOE_AESON_ERROR
+
+--------------------
+
+instance AsFPathError UsageParseAesonFPPIOError where
+  _FPathError = _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∘ _FPathError
+
+--------------------
+
+instance AsIOError UsageParseAesonFPPIOError where
+  _IOError = _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∘ _IOError
+
+--------------------
+
+instance AsCreateProcError UsageParseAesonFPPIOError where
+  _CreateProcError = _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∘ _CreateProcError
+
+--------------------
+
+instance AsProcExitError UsageParseAesonFPPIOError where
+  _ProcExitError = _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∘ _ProcExitError
+
+--------------------
+
+instance Printable UsageParseAesonFPPIOError where
+  print (UPAFPPIOE_AESON_ERROR   e) = print e
+  print (UPAFPPIOE_TPARSE_ERROR  e) = print e
+  print (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) = print e
+
+--------------------
+
+instance HasCallstack UsageParseAesonFPPIOError where
+  callstack =
+    let
+      getter (UPAFPPIOE_AESON_ERROR   e) = e ⊣ callstack
+      getter (UPAFPPIOE_TPARSE_ERROR  e) = e ⊣ callstack
+      getter (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) = e ⊣ callstack
+      setter (UPAFPPIOE_AESON_ERROR   e) cs =
+        UPAFPPIOE_AESON_ERROR (e & callstack ⊢ cs)
+      setter (UPAFPPIOE_TPARSE_ERROR  e) cs =
+        UPAFPPIOE_TPARSE_ERROR (e & callstack ⊢ cs)
+      setter (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) cs =
+        UPAFPPIOE_USAGE_FP_PROC_IO_ERROR (e & callstack ⊢ cs)
     in
       lens getter setter
 
