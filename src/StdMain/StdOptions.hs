@@ -208,26 +208,38 @@ options ∷ Lens' (StdOptions ν α) α
 options = lens _nonBaseOptions
                (\ s nonBaseOptions → s { _nonBaseOptions = nonBaseOptions })
 
+{-| parser fon the stdoptions; namely -v, --quiet, --debug, --verbose,
+    --callstack-on-error, --prof-callstack-on-error -}
 parseStdOptions ∷ Natty ν → Parser α → Parser (StdOptions ν α)
 parseStdOptions n p =
   let -- up to n flags, each invoking an instance of a function
       flagn ∷ Natty ν → Mod FlagFields () → (α → α) → α → Parser α
       flagn i m f a =
-        (\ c → foldr ($) a (replicate (count c) f)) ⊳ atMost i (flag' () m)
+        let replicate' ∷ ℕ → β → [β]
+            replicate' = replicate
+        in  (\ c → foldr ($) a (replicate' (count c) f)) ⊳ atMost i (flag' () m)
+
+      -- flagsev i m f creates a flag to manage severity; it may be invoked
+      -- up to m times, it has attributes m, and each time it calls f to adjust
+      -- the severity
       flagsev ∷ Natty ν → Mod FlagFields () → (Severity → Severity)
               → Parser VerboseOptions
       flagsev i m f = defVOpts ⊳ flagn i m f defaultSev
       -- marked as 'internal' because a better description is in the Standard
       -- Options footer
       flagv         = flagsev three (short 'v' ⊕ internal) succ
+      -- "--quiet" flag
       flagq         = flagsev four (long "quiet" ⊕ internal)
                               pred
+      -- "--debug" flag
       flagd         = defVOpts ⊳ flag' Debug (long "debug" ⊕ internal)
       verbose       = parsecOption (long "verbose")
    in StdOptions ⊳ p
                  ⊵ (flagv ∤ flagq ∤ flagd ∤ verbose)
                  ⊵ dryRunP n
-                 ⊵ flag NoCallstackOnError CallstackOnError (long "callstack-on-error" ⊕ short '!')
-                 ⊵ flag NoProfCallstackOnError ProfCallstackOnError (long "prof-callstack-on-error" ⊕ short '#')
+                 ⊵ flag NoCallstackOnError CallstackOnError
+                        (long "callstack-on-error" ⊕ short '!')
+                 ⊵ flag NoProfCallstackOnError ProfCallstackOnError
+                        (long "prof-callstack-on-error" ⊕ short '#')
 
 -- that's all, folks! ----------------------------------------------------------
