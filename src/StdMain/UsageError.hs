@@ -1,110 +1,114 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UnicodeSyntax  #-}
 
 {-| @UsageError@ and many combined errors -}
 
 module StdMain.UsageError
-  ( AsUsageError( _UsageError )
+  ( AsUsageError(_UsageError)
   , UsageError
   , UsageFPIOTPError
+  , UsageFPProcIOError
   , UsageFPathError
   , UsageFPathIOError
-  , UsageFPProcIOError
   , UsageIOError
   , UsageParseAesonFPPIOError
   , UsageParseFPProcIOError
-  , readUsage, throwUsage, usageError
-  )
-where
+  , readUsage
+  , throwUsage
+  , usageError
+  ) where
 
 -- aeson-plus --------------------------
 
-import Data.Aeson.Error  ( AesonError, AsAesonError( _AesonError ) )
+import Data.Aeson.Error ( AesonError, AsAesonError(_AesonError) )
 
 -- base --------------------------------
 
-import Control.Exception  ( Exception )
-import Control.Monad      ( return )
-import Data.Eq            ( Eq( (==) ) )
-import Data.Function      ( ($), (&), id )
-import Data.Maybe         ( maybe )
-import GHC.Generics       ( Generic )
-import GHC.Stack          ( CallStack, HasCallStack, callStack )
-import Text.Read          ( Read, readMaybe )
-import Text.Show          ( Show( show ) )
+import Control.Exception ( Exception )
+import Control.Monad     ( return )
+import Data.Eq           ( Eq((==)) )
+import Data.Function     ( id, ($), (&) )
+import Data.Maybe        ( maybe )
+import GHC.Generics      ( Generic )
+import GHC.Stack         ( CallStack, HasCallStack, callStack )
+import Text.Read         ( Read, readMaybe )
+import Text.Show         ( Show(show) )
 
 -- base-unicode-symbols ----------------
 
-import Data.Function.Unicode  ( (∘) )
+import Data.Function.Unicode ( (∘) )
 
 -- data-textual ------------------------
 
-import Data.Textual  ( Printable( print ), toString, toText )
+import Data.Textual ( Printable(print), toString, toText )
 
 -- deepseq -----------------------------
 
-import Control.DeepSeq  ( NFData )
+import Control.DeepSeq ( NFData )
 
 -- fpath -------------------------------
 
-import FPath.Error.FPathError  ( AsFPathError( _FPathError )
-                               , FPathError, FPathIOError )
+import FPath.Error.FPathError ( AsFPathError(_FPathError), FPathError,
+                                FPathIOError )
 
 -- has-callstack -----------------------
 
-import HasCallstack  ( HasCallstack( callstack ) )
+import HasCallstack ( HasCallstack(callstack) )
 
 -- lens --------------------------------
 
-import Control.Lens.Lens    ( lens )
-import Control.Lens.Prism   ( Prism', prism' )
-import Control.Lens.Review  ( (#) )
+import Control.Lens.Lens   ( lens )
+import Control.Lens.Prism  ( Prism', prism' )
+import Control.Lens.Review ( (#) )
 
 -- monaderror-io -----------------------
 
-import MonadError.IO.Error  ( AsIOError( _IOError ), IOError )
+import MonadError.IO.Error ( AsIOError(_IOError), IOError )
 
 -- monadio-plus ------------------------
 
-import MonadIO.Error.CreateProcError  ( AsCreateProcError( _CreateProcError )
-                                      , CreateProcError )
-import MonadIO.Error.ProcExitError    ( AsProcExitError( _ProcExitError )
-                                      , ProcExitError )
+import MonadIO.Error.CreateProcError ( AsCreateProcError(_CreateProcError),
+                                       CreateProcError )
+import MonadIO.Error.ProcExitError   ( AsProcExitError(_ProcExitError),
+                                       ProcExitError )
 
 -- more-unicode ------------------------
 
-import Data.MoreUnicode.Lens   ( (⊣), (⊢) )
-import Data.MoreUnicode.Maybe  ( pattern 𝕵, pattern 𝕹 )
+import Data.MoreUnicode.Lens  ( (⊢), (⊣) )
+import Data.MoreUnicode.Maybe ( pattern 𝕵, pattern 𝕹 )
 
 -- mtl ---------------------------------
 
-import Control.Monad.Except  ( MonadError, throwError )
+import Control.Monad.Except ( MonadError, throwError )
 
 -- parsec-plus -------------------------
 
-import ParsecPlus  ( AsParseError( _ParseError ), ParseError )
+import ParsecPlus ( AsParseError(_ParseError), ParseError )
 
 -- text --------------------------------
 
-import Data.Text  ( Text )
+import Data.Text ( Text )
 
 -- text-printer ------------------------
 
-import qualified  Text.Printer  as  P
+import Text.Printer qualified as P
 
 -- textual-plus ------------------------
 
-import TextualPlus.Error.TextualParseError
-               ( AsTextualParseError( _TextualParseError ), TextualParseError )
+import TextualPlus.Error.TextualParseError ( AsTextualParseError(_TextualParseError),
+                                             TextualParseError )
 
 -- tfmt --------------------------------
 
-import Text.Fmt  ( fmtT )
+import Text.Fmt ( fmtT )
 
 --------------------------------------------------------------------------------
 
 {-| an error in cmdline calling args & options -}
-data UsageError = UsageError { _txt ∷ Text, _callstack ∷ CallStack }
-  deriving (Generic,NFData,Show)
+data UsageError = UsageError { _txt       :: Text
+                             , _callstack :: CallStack
+                             }
+  deriving (Generic, NFData, Show)
 
 ----------------------------------------
 
@@ -161,8 +165,8 @@ readUsage s = let errMsg = [fmtT|failed to parse: '%T'|] s
 
 {-| combined @UsageError@ & @IOError@ -}
 data UsageIOError = UIOE_USAGE_ERROR UsageError
-                  | UIOE_IO_ERROR    IOError
-  deriving (Generic,NFData)
+                  | UIOE_IO_ERROR IOError
+  deriving (Generic, NFData)
 
 _UIOE_USAGE_ERROR ∷ Prism' UsageIOError UsageError
 _UIOE_USAGE_ERROR = prism' (\ e → UIOE_USAGE_ERROR e)
@@ -215,7 +219,7 @@ instance HasCallstack UsageIOError where
 {-| combined @UsageError@ & @FPathError@ -}
 data UsageFPathError = UFPE_USAGE_ERROR UsageError
                      | UFPE_FPATH_ERROR FPathError
-  deriving (Eq,Generic,NFData)
+  deriving (Eq, Generic, NFData)
 
 _UFPE_USAGE_ERROR ∷ Prism' UsageFPathError UsageError
 _UFPE_USAGE_ERROR = prism' (\ e → UFPE_USAGE_ERROR e)
@@ -248,7 +252,7 @@ instance AsFPathError UsageFPathError where
 --------------------
 
 instance Printable UsageFPathError where
-  print (UFPE_USAGE_ERROR e) = print e
+  print (UFPE_USAGE_ERROR e)    = print e
   print (UFPE_FPATH_ERROR    e) = print e
 
 --------------------
@@ -266,9 +270,9 @@ instance HasCallstack UsageFPathError where
 ------------------------------------------------------------
 
 {-| combined @UsageError@, @IOError@ & @FPathError@ -}
-data UsageFPathIOError = UFPIOE_USAGE_ERROR   UsageError
+data UsageFPathIOError = UFPIOE_USAGE_ERROR UsageError
                        | UFPIOE_FPATHIO_ERROR FPathIOError
-  deriving (Eq,Generic,NFData)
+  deriving (Eq, Generic, NFData)
 
 _UFPIOE_USAGE_ERROR ∷ Prism' UsageFPathIOError UsageError
 _UFPIOE_USAGE_ERROR = prism' (\ e → UFPIOE_USAGE_ERROR e)
@@ -285,7 +289,7 @@ instance Exception UsageFPathIOError
 --------------------
 
 instance Show UsageFPathIOError where
-  show (UFPIOE_USAGE_ERROR e) = show e
+  show (UFPIOE_USAGE_ERROR e)      = show e
   show (UFPIOE_FPATHIO_ERROR    e) = show e
 
 --------------------
@@ -330,7 +334,7 @@ instance HasCallstack UsageFPathIOError where
 data UsageFPProcIOError = UFPPIOE_UFPIO_ERROR UsageFPathIOError
                         | UFPPIOE_CPROC_ERROR CreateProcError
                         | UFPPIOE_PEXIT_ERROR ProcExitError
-  deriving (Eq,Generic,NFData)
+  deriving (Eq, Generic, NFData)
 
 _UFPPIOE_UFPIO_ERROR ∷ Prism' UsageFPProcIOError UsageFPathIOError
 _UFPPIOE_UFPIO_ERROR =
@@ -412,8 +416,8 @@ instance HasCallstack UsageFPProcIOError where
 {-| combined @UsageError@, @FPathError@, @IOError@, @CreateProcError@,
     @ProcExitError@, @ParseError@ -}
 data UsageParseFPProcIOError = UPFPPIOE_USAGE_ETC_ERROR UsageFPProcIOError
-                             | UPFPPIOE_PARSE_ERROR     ParseError
-  deriving (Eq,Generic,NFData,Show)
+                             | UPFPPIOE_PARSE_ERROR ParseError
+  deriving (Eq, Generic, NFData, Show)
 
 _UPFPPIOE_USAGE_ETC_ERROR ∷ Prism' UsageParseFPProcIOError
                                    UsageFPProcIOError
@@ -435,7 +439,7 @@ instance HasCallstack UsageParseFPProcIOError where
   callstack =
     let
       getter (UPFPPIOE_USAGE_ETC_ERROR   e) = e ⊣ callstack
-      getter (UPFPPIOE_PARSE_ERROR e) = e ⊣ callstack
+      getter (UPFPPIOE_PARSE_ERROR e)       = e ⊣ callstack
       setter (UPFPPIOE_USAGE_ETC_ERROR   e) cs =
         UPFPPIOE_USAGE_ETC_ERROR (e & callstack ⊢ cs)
       setter (UPFPPIOE_PARSE_ERROR e) cs =
@@ -464,9 +468,9 @@ instance AsUsageError UsageParseFPProcIOError where
 ------------------------------------------------------------
 
 {-| combined @UsageError@, @FPathError@, @IOError@, @TextualParseError@ -}
-data UsageFPIOTPError = UFPIOTPE_USAGE_FPATH_IO_ERROR  UsageFPathIOError
-                      | UFPIOTPE_TPARSE_ERROR          TextualParseError
-  deriving (Eq,Generic,NFData)
+data UsageFPIOTPError = UFPIOTPE_USAGE_FPATH_IO_ERROR UsageFPathIOError
+                      | UFPIOTPE_TPARSE_ERROR TextualParseError
+  deriving (Eq, Generic, NFData)
 
 _UFPIOTPE_USAGE_FPATH_IO_ERROR ∷ Prism' UsageFPIOTPError UsageFPathIOError
 _UFPIOTPE_USAGE_FPATH_IO_ERROR = prism' (\ e → UFPIOTPE_USAGE_FPATH_IO_ERROR e)
@@ -483,7 +487,7 @@ instance Exception UsageFPIOTPError
 --------------------
 
 instance Show UsageFPIOTPError where
-  show (UFPIOTPE_TPARSE_ERROR e) = show e
+  show (UFPIOTPE_TPARSE_ERROR e)            = show e
   show (UFPIOTPE_USAGE_FPATH_IO_ERROR    e) = show e
 
 --------------------
@@ -509,7 +513,7 @@ instance AsIOError UsageFPIOTPError where
 --------------------
 
 instance Printable UsageFPIOTPError where
-  print (UFPIOTPE_TPARSE_ERROR   e) = print e
+  print (UFPIOTPE_TPARSE_ERROR   e)       = print e
   print (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = print e
 
 --------------------
@@ -517,7 +521,7 @@ instance Printable UsageFPIOTPError where
 instance HasCallstack UsageFPIOTPError where
   callstack =
     let
-      getter (UFPIOTPE_TPARSE_ERROR   e) = e ⊣ callstack
+      getter (UFPIOTPE_TPARSE_ERROR   e)       = e ⊣ callstack
       getter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = e ⊣ callstack
       setter (UFPIOTPE_TPARSE_ERROR   e) cs =
         UFPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
@@ -529,11 +533,10 @@ instance HasCallstack UsageFPIOTPError where
 ------------------------------------------------------------
 
 {-| combined @UsageError@, @FPathError@, @IOError@, @TextualParseError@ -}
-data UsageParseAesonFPPIOError =
-    UPAFPPIOE_USAGE_FP_PROC_IO_ERROR  UsageParseFPProcIOError
-  | UPAFPPIOE_AESON_ERROR             AesonError
-  | UPAFPPIOE_TPARSE_ERROR            TextualParseError
-  deriving (Eq,Generic{- ,NFData -})
+data UsageParseAesonFPPIOError = UPAFPPIOE_USAGE_FP_PROC_IO_ERROR UsageParseFPProcIOError
+                               | UPAFPPIOE_AESON_ERROR AesonError
+                               | UPAFPPIOE_TPARSE_ERROR TextualParseError
+  deriving (Eq, Generic, NFData)
 
 _UPAFPPIOE_USAGE_FP_PROC_IO_ERROR ∷ Prism' UsageParseAesonFPPIOError
                                            UsageParseFPProcIOError
@@ -598,8 +601,8 @@ instance AsProcExitError UsageParseAesonFPPIOError where
 --------------------
 
 instance Printable UsageParseAesonFPPIOError where
-  print (UPAFPPIOE_AESON_ERROR   e) = print e
-  print (UPAFPPIOE_TPARSE_ERROR  e) = print e
+  print (UPAFPPIOE_AESON_ERROR   e)          = print e
+  print (UPAFPPIOE_TPARSE_ERROR  e)          = print e
   print (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) = print e
 
 --------------------
@@ -607,8 +610,8 @@ instance Printable UsageParseAesonFPPIOError where
 instance HasCallstack UsageParseAesonFPPIOError where
   callstack =
     let
-      getter (UPAFPPIOE_AESON_ERROR   e) = e ⊣ callstack
-      getter (UPAFPPIOE_TPARSE_ERROR  e) = e ⊣ callstack
+      getter (UPAFPPIOE_AESON_ERROR   e)          = e ⊣ callstack
+      getter (UPAFPPIOE_TPARSE_ERROR  e)          = e ⊣ callstack
       getter (UPAFPPIOE_USAGE_FP_PROC_IO_ERROR e) = e ⊣ callstack
       setter (UPAFPPIOE_AESON_ERROR   e) cs =
         UPAFPPIOE_AESON_ERROR (e & callstack ⊢ cs)

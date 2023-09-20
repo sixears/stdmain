@@ -1,3 +1,7 @@
+1.6.1.2 2023-09-20
+==================
+- add NFData instacne of UsageParseAesonFPPIOError
+
 1.6.1.1 2023-07-08
 ==================
 - use natural-0.0.3.0
