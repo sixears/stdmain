@@ -1,3 +1,7 @@
+1.6.2.0 2023-11-13
+==================
+- +StdMain.UsageError.throwUsageT; use Base1T everywhere
+
 1.6.1.2 2023-09-20
 ==================
 - add NFData instacne of UsageParseAesonFPPIOError

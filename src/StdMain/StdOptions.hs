@@ -1,80 +1,72 @@
+{-# LANGUAGE UnicodeSyntax #-}
 module StdMain.StdOptions
-  ( DryRunLevel, HasDryRun, HasDryRunLevel( dryRunLevel, level )
-  , ReadDryRunLevel, StdOptions
-  , askDryRunL, callstackOnError, dryRunLvl, dryRunNum, dryRunOff, dryRunOn
-  , dryRunP, dryRun1P, dryRun2P, ifDryRun, ifDryRunEq, ifDryRunGE, options
-  , parseStdOptions, profCallstackOnError, unlessDryRunGE
-  )
-where
+  ( DryRunLevel
+  , HasDryRun
+  , HasDryRunLevel(dryRunLevel, level)
+  , ReadDryRunLevel
+  , StdOptions
+  , askDryRunL
+  , callstackOnError
+  , dryRun1P
+  , dryRun2P
+  , dryRunLvl
+  , dryRunNum
+  , dryRunOff
+  , dryRunOn
+  , dryRunP
+  , ifDryRun
+  , ifDryRunEq
+  , ifDryRunGE
+  , options
+  , parseStdOptions
+  , profCallstackOnError
+  , unlessDryRunGE
+  ) where
 
-import Prelude  ( pred, succ )
-
--- base --------------------------------
-
-import Data.Bool      ( Bool )
-import Data.Foldable  ( foldr )
-import Data.Function  ( ($),  const, id )
-import Text.Show      ( Show( show ) )
-
--- base-unicode-symbols ----------------
-
-import Data.Eq.Unicode        ( (≡) )
-import Data.Function.Unicode  ( (∘) )
-import Data.Monoid.Unicode    ( (⊕) )
-import Data.Ord.Unicode       ( (≥) )
+import Base1T
+import Prelude ( pred, succ )
 
 -- exited ------------------------------
 
-import Exited  ( CallstackOnError(..), ProfCallstackOnError(..) )
+import Exited ( CallstackOnError(..), ProfCallstackOnError(..) )
 
 -- lens --------------------------------
 
-import Control.Lens.Getter  ( view )
-import Control.Lens.Iso     ( iso )
-import Control.Lens.Lens    ( Lens', lens )
+import Control.Lens.Getter ( view )
+import Control.Lens.Iso    ( iso )
 
 -- log-plus ----------------------------
 
-import Log.HasSeverity  ( HasSeverity( severity ) )
+import Log.HasSeverity ( HasSeverity(severity) )
 
 -- logging-effect ----------------------
 
-import Control.Monad.Log  ( Severity( Debug, Warning ) )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode  ( (∤), (⊳), (⊵), 𝔹, ℕ )
+import Control.Monad.Log ( Severity(Debug, Warning) )
 
 -- mtl ---------------------------------
 
-import Control.Monad.Reader  ( MonadReader, ask )
+import Control.Monad.Reader ( MonadReader, ask )
 
 -- natural-plus ------------------------
 
-import Natural  ( AtMost( Cons, Nil ), Countable( count ), Nat( S ), Natty
-                , One, Two, atMost, atMostOne, atMostTwo, count, four, replicate
-                , three
-                )
+import Natural ( AtMost(Cons, Nil), Countable(count), Nat(S), Natty, One, Two,
+                 atMost, atMostOne, atMostTwo, count, four, replicate, three )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative  ( FlagFields, Mod, Parser
-                            , flag, flag', internal, long, short )
+import Options.Applicative ( FlagFields, Mod, Parser, flag, flag', internal,
+                             long, short )
 
 -- optparse-plus -------------------------
 
-import OptParsePlus  ( parsecOption )
-
--- tfmt --------------------------------
-
-import Text.Fmt  ( fmt )
+import OptParsePlus ( parsecOption )
 
 ------------------------------------------------------------
 --                     local imports                      --
 ------------------------------------------------------------
 
-import StdMain.VerboseOptions  ( HasVerboseOptions( verboseOptions )
-                               , VerboseOptions, defVOpts )
+import StdMain.VerboseOptions ( HasVerboseOptions(verboseOptions),
+                                VerboseOptions, defVOpts )
 
 --------------------------------------------------------------------------------
 
@@ -85,10 +77,9 @@ ifThenElse b t e = if b then t else e
 
 ----------------------------------------
 
-data DryRunN = DryRunN
-  deriving Show
+data DryRunN = DryRunN deriving (Show)
 
-newtype DryRunLevel n = DryRunLevel { _level ∷ AtMost n DryRunN }
+newtype DryRunLevel n = DryRunLevel { _level :: AtMost n DryRunN }
 
 class HasDryRunLevel n c | c → n where
   dryRunLevel ∷ Lens' c (DryRunLevel n)
@@ -180,13 +171,13 @@ defaultSev = Warning
 
 ----------------------------------------
 
-data StdOptions ν α = StdOptions { _nonBaseOptions        ∷ α
-                                 , _verboseOptions        ∷ VerboseOptions
-                                 , _dryRunLevel           ∷ DryRunLevel ν
-                                 , _callstackOnError      ∷ CallstackOnError
-                                 , _profCallstackOnError  ∷ ProfCallstackOnError
+data StdOptions ν α = StdOptions { _nonBaseOptions       :: α
+                                 , _verboseOptions       :: VerboseOptions
+                                 , _dryRunLevel          :: DryRunLevel ν
+                                 , _callstackOnError     :: CallstackOnError
+                                 , _profCallstackOnError :: ProfCallstackOnError
                                  }
-  deriving Show
+  deriving (Show)
 
 instance HasDryRunLevel ν (StdOptions ν α) where
   dryRunLevel = lens _dryRunLevel (\ so drl → so { _dryRunLevel = drl })

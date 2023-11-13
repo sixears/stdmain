@@ -1,82 +1,49 @@
+{-# LANGUAGE UnicodeSyntax #-}
 {- | Tools for working with options. -}
 module StdMain.OptionsTools
-  ( fileToAbsNoOverwrite, fileToAbsUE, fpathIOErrorToAsUsageIOError )
-where
+  ( fileToAbsNoOverwrite
+  , fileToAbsUE
+  , fpathIOErrorToAsUsageIOError
+  ) where
 
--- base --------------------------------
-
-import Control.Monad           ( return )
-import Control.Monad.IO.Class  ( MonadIO )
-import Data.Either             ( Either( Left, Right ) )
-import Data.Function           ( ($) )
-import Data.Maybe              ( Maybe( Just, Nothing ) )
-import GHC.Stack               ( HasCallStack )
-
--- base-unicode-symbols ----------------
-
-import Data.Function.Unicode  ( (∘) )
-
--- data-texutal ------------------------
-
-import Data.Textual  ( Printable, toText )
-
--- data-default ------------------------
-
-import Data.Default  ( Default )
+import Base1T
 
 -- fpath -------------------------------
 
-import FPath.AbsFile           ( AbsFile )
-import FPath.Error.FPathError  ( FPathIOError, fpathIOErrorEither )
+import FPath.AbsFile          ( AbsFile )
+import FPath.Error.FPathError ( FPathIOError, fpathIOErrorEither )
 
 -- fstat -------------------------------
 
-import FStat  ( FileType( CharacterDevice, NamedPipe, Socket ), ftype )
-
--- lens --------------------------------
-
-import Control.Lens.Review  ( (#) )
+import FStat ( FileType(CharacterDevice, NamedPipe, Socket), ftype )
 
 -- log-plus ----------------------------
 
-import Log  ( Log )
+import Log ( Log )
 
 -- logging-effect ----------------------
 
-import Control.Monad.Log  ( MonadLog, Severity( Informational ) )
+import Control.Monad.Log ( MonadLog, Severity(Informational) )
 
 -- mockio ------------------------------
 
-import MockIO          ( HasDoMock, DoMock( NoMock ) )
-import MockIO.IOClass  ( HasIOClass )
+import MockIO         ( DoMock(NoMock), HasDoMock )
+import MockIO.IOClass ( HasIOClass )
 
 -- monadio-plus ------------------------
 
-import MockIO.FStat    ( stat )
-import MonadIO.FPath  ( PResolvable, pResolve )
+import MockIO.FStat  ( stat )
+import MonadIO.FPath ( PResolvable, pResolve )
 
 -- monaderror-io -----------------------
 
-import MonadError           ( mapMError' )
-import MonadError.IO.Error  ( AsIOError( _IOError ) )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode.Functor  ( (⊳) )
-
--- mtl ---------------------------------
-
-import Control.Monad.Except  ( MonadError )
-
--- tfmt --------------------------------
-
-import Text.Fmt  ( fmtT )
+import MonadError ( mapMError' )
 
 ------------------------------------------------------------
 --                     local imports                      --
 ------------------------------------------------------------
 
-import StdMain.UsageError  ( AsUsageError, throwUsage, usageError )
+import StdMain.UsageError ( AsUsageError, throwUsage, usageError )
 
 --------------------------------------------------------------------------------
 

@@ -15,8 +15,11 @@ module StdMain.UsageError
   , UsageParseFPProcIOError
   , readUsage
   , throwUsage
+  , throwUsageT
   , usageError
   ) where
+
+import Base1T
 
 -- aeson-plus --------------------------
 
@@ -24,23 +27,8 @@ import Data.Aeson.Error ( AesonError, AsAesonError(_AesonError) )
 
 -- base --------------------------------
 
-import Control.Exception ( Exception )
-import Control.Monad     ( return )
-import Data.Eq           ( Eq((==)) )
-import Data.Function     ( id, ($), (&) )
-import Data.Maybe        ( maybe )
-import GHC.Generics      ( Generic )
-import GHC.Stack         ( CallStack, HasCallStack, callStack )
-import Text.Read         ( Read, readMaybe )
-import Text.Show         ( Show(show) )
-
--- base-unicode-symbols ----------------
-
-import Data.Function.Unicode ( (∘) )
-
--- data-textual ------------------------
-
-import Data.Textual ( Printable(print), toString, toText )
+import GHC.Generics ( Generic )
+import Text.Read    ( Read, readMaybe )
 
 -- deepseq -----------------------------
 
@@ -51,19 +39,9 @@ import Control.DeepSeq ( NFData )
 import FPath.Error.FPathError ( AsFPathError(_FPathError), FPathError,
                                 FPathIOError )
 
--- has-callstack -----------------------
-
-import HasCallstack ( HasCallstack(callstack) )
-
--- lens --------------------------------
-
-import Control.Lens.Lens   ( lens )
-import Control.Lens.Prism  ( Prism', prism' )
-import Control.Lens.Review ( (#) )
-
 -- monaderror-io -----------------------
 
-import MonadError.IO.Error ( AsIOError(_IOError), IOError )
+import MonadError.IO.Error ( IOError )
 
 -- monadio-plus ------------------------
 
@@ -71,15 +49,6 @@ import MonadIO.Error.CreateProcError ( AsCreateProcError(_CreateProcError),
                                        CreateProcError )
 import MonadIO.Error.ProcExitError   ( AsProcExitError(_ProcExitError),
                                        ProcExitError )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode.Lens  ( (⊢), (⊣) )
-import Data.MoreUnicode.Maybe ( pattern 𝕵, pattern 𝕹 )
-
--- mtl ---------------------------------
-
-import Control.Monad.Except ( MonadError, throwError )
 
 -- parsec-plus -------------------------
 
@@ -97,10 +66,6 @@ import Text.Printer qualified as P
 
 import TextualPlus.Error.TextualParseError ( AsTextualParseError(_TextualParseError),
                                              TextualParseError )
-
--- tfmt --------------------------------
-
-import Text.Fmt ( fmtT )
 
 --------------------------------------------------------------------------------
 
@@ -151,6 +116,12 @@ usageError t = _UsageError # UsageError (toText t) callStack
 {-| throw an @AsUsageError@, given a @ToText@ -}
 throwUsage ∷ ∀ τ ε ω η . (Printable τ, AsUsageError ε, MonadError ε η) ⇒ τ → η ω
 throwUsage t = throwError $ usageError t
+
+----------------------------------------
+
+{-| throw an @AsUsageError@, given a @ToText@ -}
+throwUsageT ∷ ∀ ε ω η . (AsUsageError ε, MonadError ε η) ⇒ 𝕋 → η ω
+throwUsageT = throwUsage
 
 ----------------------------------------
 

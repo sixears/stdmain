@@ -1,140 +1,104 @@
+{-# LANGUAGE UnicodeSyntax #-}
 module StdMain.VerboseOptions
-  ( LogFile( unLogFile ), HasVerboseOptions( verboseOptions )
-  , ShowIOCs( DoShowIOCs, NoShowIOCs ), VerboseOptions
-  , csopt, defVOpts, ioClassFilter, logFile, showIOCs, verboseDesc
-
+  ( HasVerboseOptions(verboseOptions)
+  , LogFile(unLogFile)
+  , ShowIOCs(DoShowIOCs, NoShowIOCs)
+  , VerboseOptions
+  , csopt
+  , defVOpts
+  , ioClassFilter
+  , logFile
+  , showIOCs
   , tests
-  )
-where
+  , verboseDesc
+  ) where
 
-import GHC.Exts  ( fromList )
+import Base1T
 
-import Prelude  ( enumFrom )
+import Prelude ( enumFrom )
 
 -- base --------------------------------
 
-import Control.Applicative    ( some, pure )
-import Control.Monad          ( foldM, return )
-import Control.Monad.Fail     ( MonadFail( fail ) )
-import Data.Char              ( Char, toLower )
-import Data.Eq                ( Eq )
-import Data.Function          ( ($), id )
-import Data.Functor           ( fmap )
-import Data.Functor.Identity  ( Identity )
-import Data.List.NonEmpty     ( NonEmpty( (:|) ) )
-import Data.Maybe             ( Maybe( Just, Nothing ), fromMaybe )
-import Data.String            ( String )
-import System.Exit            ( ExitCode )
-import System.IO              ( IO )
-import Text.Read              ( read )
-import Text.Show              ( Show( show ) )
-
--- base-unicode-symbols ----------------
-
-import Data.Function.Unicode  ( (∘) )
-import Data.Monoid.Unicode    ( (⊕) )
-
--- data-textual ------------------------
-
-import Data.Textual  ( Printable( print ) )
+import Control.Monad.Fail ( MonadFail(fail) )
+import Data.Char          ( Char, toLower )
+import Data.Maybe         ( fromMaybe )
+import Text.Read          ( read )
 
 -- fpath -------------------------------
 
-import FPath.AbsFile    ( absfile )
-import FPath.File       ( File( FileA, FileR ) )
-import FPath.Parseable  ( parse' )
-import FPath.RelFile    ( relfile )
-
--- lens --------------------------------
-
-import Control.Lens.Lens  ( Lens', lens )
+import FPath.AbsFile   ( absfile )
+import FPath.File      ( File(FileA, FileR) )
+import FPath.Parseable ( parse' )
+import FPath.RelFile   ( relfile )
 
 -- log-plus ----------------------------
 
-import Log              ( CSOpt( CallStackHead, FullCallStack, NoCallStack )
-                        , stackParses )
-import Log.HasSeverity  ( HasSeverity( severity ) )
+import Log             ( CSOpt(CallStackHead, FullCallStack, NoCallStack),
+                         stackParses )
+import Log.HasSeverity ( HasSeverity(severity) )
 
 -- logging-effect ----------------------
 
-import Control.Monad.Log  ( Severity( Alert, Emergency, Warning, Notice ) )
+import Control.Monad.Log ( Severity(Alert, Emergency, Notice, Warning) )
 
 -- mockio ------------------------------
 
-import MockIO.IOClass  ( IOClass( IOCmdW, IORead, IOWrite ), IOClassSet
-                       , ioClasses, ioClassParses )
+import MockIO.IOClass ( IOClass(IOCmdW, IORead, IOWrite), IOClassSet,
+                        ioClassParses, ioClasses )
 
 -- monaderror-io -----------------------
 
-import MonadError  ( mErrFail )
-
--- more-unicode ------------------------
-
-import Data.MoreUnicode  ( (∤), (≫), (⊳), (⊵), (⋪), (⋫), ю, ℕ )
+import MonadError ( mErrFail )
 
 -- natural-plus ------------------------
 
-import Natural  ( allEnum, toEnum )
+import Natural ( allEnum, toEnum )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative.Help.Pretty  ( Doc, (<$$>), align, comma, fillSep
-                                        , indent, punctuate, text )
+import Options.Applicative.Help.Pretty ( Doc, align, comma, fillSep, indent,
+                                         punctuate, text, (<$$>) )
 
 -- optparse-plus --------------------------------
 
-import OptParsePlus  ( (⊞), finalFullStop, listDQOr, listDQSlash, listW, toDoc
-                     , toDocT, toDocTs )
+import OptParsePlus ( finalFullStop, listDQOr, listDQSlash, listW, toDoc,
+                      toDocT, toDocTs, (⊞) )
 
 -- parsec -----------------------------
 
-import Text.Parsec.Char        ( char, letter, noneOf, oneOf )
-import Text.Parsec.Combinator  ( between, eof, option, optionMaybe, sepBy )
-import Text.Parsec.Prim        ( Parsec, ParsecT, Stream, parse, try )
+import Text.Parsec.Char       ( char, letter, noneOf, oneOf )
+import Text.Parsec.Combinator ( between, eof, option, optionMaybe, sepBy )
+import Text.Parsec.Prim       ( Parsec, ParsecT, Stream, parse, try )
 
 -- parsec-plus -------------------------
 
-import ParsecPlus  ( Parsecable( parsec, parser ), ParseError )
+import ParsecPlus ( ParseError, Parsecable(parsec, parser) )
 
 -- parser-plus -------------------------
 
-import ParserPlus  ( caseInsensitiveString, tries, uniquePrefix )
-
--- tasty -------------------------------
-
-import Test.Tasty  ( TestTree, testGroup )
-
--- tasty-hunit -------------------------
-
-import Test.Tasty.HUnit  ( (@=?), testCase )
+import ParserPlus ( caseInsensitiveString, tries, uniquePrefix )
 
 -- tasty-plus --------------------------
 
-import TastyPlus  ( (≟), assertIsLeft, assertRight, runTestsP, runTestsReplay
-                  , runTestTree )
+import TastyPlus ( (≟) )
 
 -- text --------------------------------
 
-import Data.Text  ( Text, pack, unpack )
+import Data.Text ( Text, pack, unpack )
 
 -- text-printer ------------------------
 
-import qualified  Text.Printer  as  P
-
--- tfmt --------------------------------
-
-import Text.Fmt  ( fmt )
+import Text.Printer qualified as P
 
 --------------------------------------------------------------------------------
 
 {- | Whether to show IOClasses on log output -}
-data ShowIOCs = NoShowIOCs | DoShowIOCs
-  deriving (Eq,Show)
+data ShowIOCs = NoShowIOCs | DoShowIOCs deriving (Eq, Show)
 
 ------------------------------------------------------------
 
-newtype LogFile = LogFile { unLogFile ∷ File }
-  deriving (Eq,Printable,Show)
+newtype LogFile = LogFile { unLogFile :: File }
+  deriving (Eq, Printable, Show)
 
 instance Parsecable LogFile where
   parser = LogFile ⊳ do
@@ -143,14 +107,15 @@ instance Parsecable LogFile where
 
 ------------------------------------------------------------
 
-data VerboseOptions =
-  VerboseOptions { _logSeverity   ∷ Severity -- ^ lowest passing severity
-                 , _ioClassFilter ∷ IOClassSet
-                 , _callstack     ∷ CSOpt
-                 , _logFile       ∷ Maybe LogFile
-                 , _showIOCs      ∷ ShowIOCs -- ^ show ioclasses
-                 }
-  deriving (Eq,Show)
+data VerboseOptions = VerboseOptions { _logSeverity   :: Severity
+                                       -- ^ lowest passing severity
+                                     , _ioClassFilter :: IOClassSet
+                                     , _callstack     :: CSOpt
+                                     , _logFile       :: Maybe LogFile
+                                     , _showIOCs      :: ShowIOCs
+                                       -- ^ show ioclasses
+                                     }
+  deriving (Eq, Show)
 
 class HasVerboseOptions α where
   verboseOptions ∷ Lens' α VerboseOptions
@@ -200,9 +165,9 @@ ioClassFilter = lens _ioClassFilter (\ o iocs → o { _ioClassFilter = iocs })
 ----------------------------------------
 
 data LogCfgElement = LogCfgIOClassSet IOClassSet
-                   | LogCfgCSOpt      CSOpt
+                   | LogCfgCSOpt CSOpt
                    | LogCfgShowIOCs
-  deriving (Eq,Show)
+  deriving (Eq, Show)
 
 instance Parsecable LogCfgElement where
   parser = let ciString  = caseInsensitiveString @_ @[]
@@ -215,7 +180,7 @@ instance Parsecable LogCfgElement where
                             ]
 
 
-newtype LogCfg = LogCfg { unLogCfg ∷ (IOClassSet,CSOpt,ShowIOCs) }
+newtype LogCfg = LogCfg { unLogCfg :: (IOClassSet, CSOpt, ShowIOCs) }
   deriving (Eq, Show)
 
 type LogCfgY = (Maybe IOClassSet,Maybe CSOpt,ShowIOCs)
