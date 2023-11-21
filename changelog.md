@@ -1,3 +1,7 @@
+1.6.3.0 2023-11-21
+==================
+- +StdMain.UsageError.UsageFPPIOTPError
+
 1.6.2.0 2023-11-13
 ==================
 - +StdMain.UsageError.throwUsageT; use Base1T everywhere

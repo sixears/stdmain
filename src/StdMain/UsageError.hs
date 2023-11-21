@@ -8,6 +8,7 @@ module StdMain.UsageError
   , UsageError
   , UsageFPIOTPError
   , UsageFPProcIOError
+  , UsageFPProcIOTPError
   , UsageFPathError
   , UsageFPathIOError
   , UsageIOError
@@ -498,6 +499,82 @@ instance HasCallstack UsageFPIOTPError where
         UFPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
       setter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) cs =
         UFPIOTPE_USAGE_FPATH_IO_ERROR (e & callstack ⊢ cs)
+    in
+      lens getter setter
+
+------------------------------------------------------------
+
+{-| combined @UsageError@, @FPathError@, @IOError@, @TextualParseError@,
+    @ProcExitError@, @CreateProcError@ -}
+data UsageFPProcIOTPError = UFPPIOTPE_USAGE_FPATH_IO_ERROR UsageFPProcIOError
+                          | UFPPIOTPE_TPARSE_ERROR TextualParseError
+  deriving (Eq, Generic, NFData)
+
+_UFPPIOTPE_USAGE_FPATH_IO_ERROR ∷ Prism' UsageFPProcIOTPError UsageFPProcIOError
+_UFPPIOTPE_USAGE_FPATH_IO_ERROR = prism' (\ e → UFPPIOTPE_USAGE_FPATH_IO_ERROR e)
+                        (\ case UFPPIOTPE_USAGE_FPATH_IO_ERROR e → 𝕵 e; _ → 𝕹)
+
+_UFPPIOTPE_TPARSE_ERROR ∷ Prism' UsageFPProcIOTPError TextualParseError
+_UFPPIOTPE_TPARSE_ERROR = prism' (\ e → UFPPIOTPE_TPARSE_ERROR e)
+                             (\ case UFPPIOTPE_TPARSE_ERROR e → 𝕵 e; _ → 𝕹)
+
+--------------------
+
+instance Exception UsageFPProcIOTPError
+
+--------------------
+
+instance Show UsageFPProcIOTPError where
+  show (UFPPIOTPE_TPARSE_ERROR e)            = show e
+  show (UFPPIOTPE_USAGE_FPATH_IO_ERROR    e) = show e
+
+--------------------
+
+instance AsUsageError UsageFPProcIOTPError where
+  _UsageError = _UFPPIOTPE_USAGE_FPATH_IO_ERROR ∘ _UsageError
+
+--------------------
+
+instance AsTextualParseError UsageFPProcIOTPError where
+  _TextualParseError = _UFPPIOTPE_TPARSE_ERROR
+
+--------------------
+
+instance AsFPathError UsageFPProcIOTPError where
+  _FPathError = _UFPPIOTPE_USAGE_FPATH_IO_ERROR ∘ _FPathError
+
+--------------------
+
+instance AsIOError UsageFPProcIOTPError where
+  _IOError = _UFPPIOTPE_USAGE_FPATH_IO_ERROR ∘ _IOError
+
+--------------------
+
+instance Printable UsageFPProcIOTPError where
+  print (UFPPIOTPE_TPARSE_ERROR   e)       = print e
+  print (UFPPIOTPE_USAGE_FPATH_IO_ERROR e) = print e
+
+--------------------
+
+instance AsCreateProcError UsageFPProcIOTPError where
+  _CreateProcError  = _UFPPIOTPE_USAGE_FPATH_IO_ERROR ∘ _CreateProcError
+
+--------------------
+
+instance AsProcExitError UsageFPProcIOTPError where
+  _ProcExitError  = _UFPPIOTPE_USAGE_FPATH_IO_ERROR ∘ _ProcExitError
+
+--------------------
+
+instance HasCallstack UsageFPProcIOTPError where
+  callstack =
+    let
+      getter (UFPPIOTPE_TPARSE_ERROR   e)       = e ⊣ callstack
+      getter (UFPPIOTPE_USAGE_FPATH_IO_ERROR e) = e ⊣ callstack
+      setter (UFPPIOTPE_TPARSE_ERROR   e) cs =
+        UFPPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
+      setter (UFPPIOTPE_USAGE_FPATH_IO_ERROR e) cs =
+        UFPPIOTPE_USAGE_FPATH_IO_ERROR (e & callstack ⊢ cs)
     in
       lens getter setter
 
