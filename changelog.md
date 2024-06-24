@@ -1,3 +1,7 @@
+1.6.3.1 2024-06-24
+==================
+- update for optparse-applicative-0.18.0.0
+
 1.6.3.0 2023-11-21
 ==================
 - +StdMain.UsageError.UsageFPPIOTPError

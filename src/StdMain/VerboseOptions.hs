@@ -56,8 +56,8 @@ import Natural ( allEnum, toEnum )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative.Help.Pretty ( Doc, align, comma, fillSep, indent,
-                                         punctuate, text, (<$$>) )
+import Options.Applicative.Help.Pretty ( Doc, align, comma, fillSep, flatAlt,
+                                         indent, line, pretty, punctuate )
 
 -- optparse-plus --------------------------------
 
@@ -91,6 +91,23 @@ import Data.Text ( Text, pack, unpack )
 import Text.Printer qualified as P
 
 --------------------------------------------------------------------------------
+
+{- | Compatibility shim for prettyprinter: see
+     https://hackage.haskell.org/package/prettyprinter-1.7.1/docs/Prettyprinter.html#g:18
+     https://hackage.haskell.org/package/optparse-applicative-0.17.1.0/docs/Options-Applicative-Help-Pretty.html
+     https://hackage.haskell.org/package/prettyprinter-compat-wl-pprint-1.0.1/docs/src/Text.PrettyPrint.Leijen.html#text
+-}
+text ∷ 𝕊 → Doc
+text = pretty
+
+
+linebreak ∷ Doc
+linebreak = flatAlt line ф
+
+(<$$>) ∷ Doc → Doc → Doc
+(<$$>) = \ x y -> x ◇ linebreak ◇ y
+
+------------------------------------------------------------
 
 {- | Whether to show IOClasses on log output -}
 data ShowIOCs = NoShowIOCs | DoShowIOCs deriving (Eq, Show)

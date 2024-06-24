@@ -1,156 +1,164 @@
+{-# LANGUAGE UnicodeSyntax #-}
 module StdMain
-  ( LogTIO, Overwrite(..)
-  , lvlToDoMock, stdMain, stdMain_, stdMainSimple, stdMainNoDR
-  , checkDirW, checkExtantsDups, checkFileW, checkFileWs, checkInputFile
-  , checkInputFiles, checkMkdirs, checkOutputFiles, checkRunNICmds
-  , checkRunNICmds', jsonParse, runNICmds, throwUsageErrors
+  ( LogTIO
+  , Overwrite(..)
+  , checkDirW
+  , checkExtantsDups
+  , checkFileW
+  , checkFileWs
+  , checkInputFile
+  , checkInputFiles
+  , checkMkdirs
+  , checkOutputFiles
+  , checkRunNICmds
+  , checkRunNICmds'
+  , jsonParse
+  , lvlToDoMock
+  , runNICmds
+  , stdMain
+  , stdMainNoDR
+  , stdMainSimple
+  , stdMain_
+  , throwUsageErrors
+    -- DEPRECATED
+  , stdMain''
+  , stdMainNoDR'
+  ) where
 
-  -- DEPRECATED
-  , stdMainNoDR', stdMain''
-  )
-where
-
-import Base1T  hiding  ( (∈) )
+import Base1T hiding ( (∈) )
 
 -- aeson -------------------------------
 
-import Data.Aeson  ( FromJSON, eitherDecode' )
+import Data.Aeson ( FromJSON, eitherDecode' )
 
 -- base --------------------------------
 
-import Data.Bool            ( bool )
-import Data.Foldable        ( Foldable )
-import Data.Function        ( flip )
-import Data.Maybe           ( catMaybes )
-import Data.String          ( unwords, words )
-import Data.Tuple           ( uncurry )
+import Data.Bool     ( bool )
+import Data.Foldable ( Foldable )
+import Data.Function ( flip )
+import Data.Maybe    ( catMaybes )
+import Data.String   ( unwords, words )
+import Data.Tuple    ( uncurry )
 
 -- bytestring --------------------------
 
-import qualified  Data.ByteString.Lazy  as  Lazy
+import Data.ByteString.Lazy qualified as Lazy
 
 -- containers-plus ---------------------
 
-import ContainersPlus.Member  ( HasMember( (∈) ) )
+import ContainersPlus.Member ( HasMember((∈)) )
 
 -- exited ------------------------------
 
-import qualified  Exited
-import Exited  ( ToExitCode )
+import Exited ( ToExitCode )
+import Exited qualified
 
 -- fpath -------------------------------
 
-import FPath.AbsDir            ( AbsDir )
-import FPath.AbsFile           ( AbsFile )
-import FPath.AsFilePath        ( AsFilePath )
-import FPath.File              ( FileAs )
-import FPath.Dirname           ( dirname )
-import FPath.Error.FPathError  ( AsFPathError )
+import FPath.AbsDir           ( AbsDir )
+import FPath.AbsFile          ( AbsFile )
+import FPath.AsFilePath       ( AsFilePath )
+import FPath.Dirname          ( dirname )
+import FPath.Error.FPathError ( AsFPathError )
+import FPath.File             ( FileAs )
 
 -- lens --------------------------------
 
-import Control.Lens.Getter  ( view )
+import Control.Lens.Getter ( view )
 
 -- log-plus ----------------------------
 
-import Log              ( Log, logIOT
-                        , logToFile', logFilter, logToStderr', stdRenderers )
-import Log.LogEntry     ( LogEntry, attrs, mapPrefixDoc )
-import Log.HasSeverity  ( severity )
+import Log             ( Log, logFilter, logIOT, logToFile', logToStderr',
+                         stdRenderers )
+import Log.HasSeverity ( severity )
+import Log.LogEntry    ( LogEntry, attrs, mapPrefixDoc )
 
 -- logging-effect ----------------------
 
-import Control.Monad.Log  ( LoggingT, MonadLog
-                          , Severity( Debug, Informational, Notice, Warning ) )
+import Control.Monad.Log ( LoggingT, MonadLog,
+                           Severity(Debug, Informational, Notice, Warning) )
 
 -- mockio ------------------------------
 
-import MockIO               ( DoMock( DoMock, NoMock ), HasDoMock )
+import MockIO ( DoMock(DoMock, NoMock), HasDoMock )
 
 -- mockio-log --------------------------
 
-import MockIO.Log           ( MockIOClass, errIO', mkIOL )
-import MockIO.IOClass       ( HasIOClass, ioClass )
-import MockIO.RenderDoMock  ( renderWithDoMock )
+import MockIO.IOClass      ( HasIOClass, ioClass )
+import MockIO.Log          ( MockIOClass, errIO', mkIOL )
+import MockIO.RenderDoMock ( renderWithDoMock )
 
 -- mockio-plus -------------------------
 
-import MockIO.Directory              ( mkdir )
-import MockIO.File                   ( AccessMode( ACCESS_W, ACCESS_WX )
-                                     , FExists( FExists, NoFExists )
-                                     , fexists, fexists', lfexists, lfexists'
-                                     )
-import MockIO.FStat                  ( access, stat )
-import MockIO.Process                ( ꙩ )
-import MockIO.Process.MLCmdSpec      ( MLCmdSpec )
-import MockIO.Process.OutputDefault  ( OutputDefault )
+import MockIO.Directory             ( mkdir )
+import MockIO.File                  ( AccessMode(ACCESS_W, ACCESS_WX),
+                                      FExists(FExists, NoFExists), fexists,
+                                      fexists', lfexists, lfexists' )
+import MockIO.FStat                 ( access, stat )
+import MockIO.Process               ( ꙩ )
+import MockIO.Process.MLCmdSpec     ( MLCmdSpec )
+import MockIO.Process.OutputDefault ( OutputDefault )
 
 -- monadio-plus ------------------------
 
-import MonadIO.Base                   ( getArgs )
-import MonadIO.Error.CreateProcError  ( AsCreateProcError )
-import MonadIO.Error.ProcExitError    ( AsProcExitError )
-import MonadIO.File                   ( FileOpenMode( FileW )
-                                      , FileType( Directory )
-                                      , HEncoding( UTF8 )
-                                      , fileWritable, ftype, withFile
-                                      )
-import MonadIO.NamedHandle            ( handle )
-import MonadIO.Process.ExitStatus     ( ExitStatus, HasExitStatus( exitVal ) )
-import MonadIO.Process.OutputHandles  ( OutputHandles )
-import MonadIO.Process.MakeProc       ( MakeProc )
-import MonadIO.Process.ToMaybeTexts   ( ToMaybeTexts )
+import MonadIO.Base                  ( getArgs )
+import MonadIO.Error.CreateProcError ( AsCreateProcError )
+import MonadIO.Error.ProcExitError   ( AsProcExitError )
+import MonadIO.File                  ( FileOpenMode(FileW), FileType(Directory),
+                                       HEncoding(UTF8), fileWritable, ftype,
+                                       withFile )
+import MonadIO.NamedHandle           ( handle )
+import MonadIO.Process.ExitStatus    ( ExitStatus, HasExitStatus(exitVal) )
+import MonadIO.Process.MakeProc      ( MakeProc )
+import MonadIO.Process.OutputHandles ( OutputHandles )
+import MonadIO.Process.ToMaybeTexts  ( ToMaybeTexts )
 
 -- mtl ---------------------------------
 
-import Control.Monad.Reader  ( runReaderT )
+import Control.Monad.Reader ( runReaderT )
 
 -- natural-plus ------------------------
 
-import Natural  ( Natty, One, none, one, count )
+import Natural ( Natty, One, count, none, one )
 
 -- optparse-applicative ----------------
 
-import Options.Applicative  ( InfoMod, Parser
-                            , footerDoc, helper, progDesc, progDescDoc )
-import Options.Applicative.Help.Pretty
-                            ( Doc, (<+>), align, empty, fillBreak, fillSep
-                            , indent, string, text, vcat )
+import Options.Applicative             ( InfoMod, Parser, footerDoc, helper,
+                                         progDesc, progDescDoc )
+import Options.Applicative.Help.Pretty ( Doc, align, emptyDoc, fillBreak,
+                                         fillSep, indent, pretty, vcat, (<+>) )
 
 -- optparse-plus -----------------------
 
-import OptParsePlus  ( parseOpts_ )
+import OptParsePlus ( parseOpts_ )
 
 -- prettyprinter -----------------------
 
-import qualified Prettyprinter  as  PPDoc
+import Prettyprinter qualified as PPDoc
 
 -- text --------------------------------
 
-import Data.Text  ( pack, unpack )
+import Data.Text ( pack, unpack )
 
 ------------------------------------------------------------
 --                     local imports                      --
 ------------------------------------------------------------
 
-import StdMain.StdOptions      ( DryRunLevel, HasDryRunLevel( dryRunLevel )
-                               , StdOptions
-                               , callstackOnError, dryRunNum, options
-                               , parseStdOptions, profCallstackOnError
-                               )
-import StdMain.ProcOutputParseError
-                               ( AsProcOutputParseError
-                               , throwAsProcOutputParseError )
-import StdMain.UsageError      ( AsUsageError, UsageFPProcIOError, throwUsage )
-import StdMain.VerboseOptions  ( ShowIOCs( DoShowIOCs )
-                               , csopt, ioClassFilter, logFile, showIOCs
-                               , unLogFile, verboseDesc, verboseOptions
-                               )
+import StdMain.ProcOutputParseError ( AsProcOutputParseError,
+                                      throwAsProcOutputParseError )
+import StdMain.StdOptions           ( DryRunLevel, HasDryRunLevel(dryRunLevel),
+                                      StdOptions, callstackOnError, dryRunNum,
+                                      options, parseStdOptions,
+                                      profCallstackOnError )
+import StdMain.UsageError           ( AsUsageError, UsageFPProcIOError,
+                                      throwUsage )
+import StdMain.VerboseOptions       ( ShowIOCs(DoShowIOCs), csopt,
+                                      ioClassFilter, logFile, showIOCs,
+                                      unLogFile, verboseDesc, verboseOptions )
 
 --------------------------------------------------------------------------------
 
-data Overwrite = Overwrite | NoOverwrite
-  deriving (Eq,Show)
+data Overwrite = Overwrite | NoOverwrite deriving (Eq, Show)
 
 ------------------------------------------------------------
 
@@ -199,13 +207,13 @@ stdMain_ n desc p io args = do
 
   let optionDesc ∷ 𝕊 → [𝕊] → Doc
       optionDesc name descn =
-        let para = fillSep $ text ⊳ (words $ unwords descn)
-         in indent 2 (fillBreak 14 (string name) <+> align para)
+        let para = fillSep $ pretty ⊳ (words $ unwords descn)
+         in indent 2 (fillBreak 14 (pretty name) <+> align para)
       optionDesc' ∷ 𝕊 → Doc → Doc
       optionDesc' name para =
-        indent 2 (fillBreak 14 (string name) <+> align para)
+        indent 2 (fillBreak 14 (pretty name) <+> align para)
       footerDesc ∷ Doc
-      footerDesc = vcat ([ empty, string "Standard options:"
+      footerDesc = vcat ([ emptyDoc, pretty ("Standard options:" ∷ 𝕋)
                          , optionDesc "-v" [ "Increase verbosity.  This may"
                                            , "be used up to 3 times (which is"
                                            , "equivalent to --debug); and is"
